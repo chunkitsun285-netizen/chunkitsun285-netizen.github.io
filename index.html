@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏯 雀界紫禁之巔｜麻將盈虧追蹤</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google API Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <style>
+        /* ===== 全部 Styles（同上，為節省篇幅省略，但你照用返之前嘅完整 CSS） ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'PingFang HK', system-ui, sans-serif; background: #0b0a0c; background-image: radial-gradient(circle at 20% 30%, #1a1418 0%, #0b0a0c 90%); color: #ece6e0; min-height: 100vh; padding: 2rem 1rem; overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+        #moneyRainContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .coin { position: absolute; font-size: 24px; animation: coinFall linear infinite; opacity: 0; color: #f7d875; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+        @keyframes coinFall { 0% { transform: translateY(-50px) rotate(0deg) scale(0.5); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg) scale(1); opacity: 0; } }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem; border-bottom: 2px solid #b8963c; padding-bottom: 1.2rem; }
+        .logo h1 { font-size: 2.8rem; font-weight: 800; background: linear-gradient(135deg, #f7d875, #b8860b); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: 2px; text-shadow: 0 0 15px rgba(184, 134, 11, 0.3); }
+        .logo .subtitle { font-size: 0.9rem; color: #b8963c; margin-left: 12px; font-weight: 300; letter-spacing: 3px; }
+        .logo .subtitle i { color: #d4af37; margin: 0 4px; }
+        .header-date { background: #1f181c; padding: 0.5rem 1.5rem; border-radius: 40px; border: 1px solid #b8963c; font-weight: 500; color: #f0d78c; font-size: 0.95rem; }
+        .rank-section { background: rgba(20, 16, 18, 0.8); backdrop-filter: blur(6px); border-radius: 32px; padding: 2rem 2rem 1.8rem; border: 1px solid #3a2e24; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7); margin-bottom: 2rem; }
+        .section-title { display: flex; align-items: center; gap: 12px; font-size: 1.7rem; font-weight: 700; color: #f0d78c; margin-bottom: 1.8rem; }
+        .section-title i { color: #d4af37; font-size: 2rem; }
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+        .rank-table th { text-align: left; padding: 1rem 0.8rem; color: #b8963c; font-weight: 600; letter-spacing: 1px; border-bottom: 1px solid #3a2e24; text-transform: uppercase; font-size: 0.85rem; }
+        .rank-table td { padding: 1rem 0.8rem; border-bottom: 1px solid #2a2124; vertical-align: middle; }
+        .rank-table tr:last-child td { border-bottom: none; }
+        .rank-table tr:hover td { background: rgba(184, 150, 60, 0.06); }
+        .rank-badge { display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; background: #1f181c; border-radius: 50%; font-weight: 700; color: #d4af37; border: 1px solid #b8963c; font-size: 0.9rem; }
+        .rank-1 { background: #d4af37; color: #0b0a0c; border-color: #f7d875; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .rank-2 { background: #a8a8a8; color: #0b0a0c; border-color: #c0c0c0; }
+        .rank-3 { background: #cd7f32; color: #0b0a0c; border-color: #daa06d; }
+        .player-name { font-weight: 600; display: flex; align-items: center; gap: 12px; }
+        .player-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #b8963c; background: #1f181c; }
+        .player-avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background: #1f181c; border: 2px solid #3a2e24; display: flex; align-items: center; justify-content: center; color: #5e4e4e; font-size: 1.2rem; }
+        .profit { font-weight: 700; letter-spacing: 0.5px; }
+        .profit-positive { color: #4caf50; }
+        .profit-negative { color: #e57373; }
+        .rank-badge-large { display: inline-block; padding: 0.2rem 0.8rem; border-radius: 40px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
+        .rank-emperor { background: linear-gradient(145deg, #f7d875, #b8860b); color: #0b0a0c; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .rank-king { background: linear-gradient(145deg, #e8a87c, #d4845a); color: #0b0a0c; }
+        .rank-duke { background: linear-gradient(145deg, #a8d8ea, #6bb5d4); color: #0b0a0c; }
+        .rank-earl { background: linear-gradient(145deg, #b8a9c9, #8a7aa8); color: #0b0a0c; }
+        .rank-knight { background: linear-gradient(145deg, #a8c9a8, #6b8f6b); color: #0b0a0c; }
+        .rank-squire { background: linear-gradient(145deg, #c9b8a8, #8f7a6b); color: #0b0a0c; }
+        .rank-peasant { background: linear-gradient(145deg, #c9c9c9, #8a8a8a); color: #0b0a0c; }
+        .rank-exile { background: linear-gradient(145deg, #e57373, #c62828); color: #ffffff; box-shadow: 0 0 20px rgba(198, 40, 40, 0.3); }
+        .rank-double { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 800px) { .rank-double { grid-template-columns: 1fr; } }
+        .rank-double .rank-section { margin-bottom: 0; }
+        .rank-double .rank-section .section-title { font-size: 1.3rem; margin-bottom: 1rem; }
+        .rank-double .rank-section .section-title i { font-size: 1.5rem; }
+        .rank-double .rank-table th, .rank-double .rank-table td { padding: 0.7rem 0.6rem; font-size: 0.9rem; }
+        .rank-double .rank-badge { width: 26px; height: 26px; line-height: 26px; font-size: 0.75rem; }
+        .rank-double .player-avatar { width: 30px; height: 30px; }
+        .rank-double .player-avatar-placeholder { width: 30px; height: 30px; font-size: 0.9rem; }
+        .chart-section { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 2rem; border: 1px solid #2f2628; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .chart-section h3 { color: #d4af37; margin-bottom: 1.5rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .chart-container { position: relative; height: 320px; }
+        .chart-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+        .chart-controls select { background: #1f181c; border: 1px solid #3a2e24; padding: 0.4rem 1rem; border-radius: 40px; color: #ece6e0; font-size: 0.85rem; outline: none; cursor: pointer; }
+        .chart-controls select:focus { border-color: #d4af37; }
+        .rain-toggle { background: linear-gradient(145deg, #d4af37, #b8860b); border: none; padding: 0.4rem 1.2rem; border-radius: 40px; font-weight: 600; font-size: 0.85rem; color: #0b0a0c; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(184, 134, 11, 0.2); }
+        .rain-toggle:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(184, 134, 11, 0.4); }
+        .rain-toggle.active { background: linear-gradient(145deg, #e57373, #c62828); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-card { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 1.8rem 2rem; border: 1px solid #2f2628; }
+        .form-card h3 { color: #d4af37; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.2rem; }
+        .form-group label { font-size: 0.9rem; color: #b8963c; font-weight: 500; letter-spacing: 0.5px; }
+        .form-group input, .form-group select { background: #1f181c; border: 1px solid #3a2e24; padding: 0.8rem 1rem; border-radius: 40px; color: #ece6e0; font-size: 1rem; outline: none; transition: 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2); }
+        .form-group input::placeholder { color: #5e4e4e; }
+        .form-group select option { background: #1f181c; color: #ece6e0; }
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .file-upload-btn { background: #1f181c; border: 1px dashed #b8963c; padding: 0.8rem 1rem; border-radius: 40px; color: #b8963c; text-align: center; transition: 0.2s; width: 100%; display: block; }
+        .file-upload-btn:hover { background: #2a2124; border-color: #d4af37; }
+        .avatar-preview { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+        .avatar-preview img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #b8963c; }
+        .avatar-preview span { color: #8a7e7e; font-size: 0.85rem; }
+        .btn-submit { background: linear-gradient(145deg, #d4af37, #b8860b); border: none; padding: 0.9rem 2rem; border-radius: 40px; font-weight: 700; font-size: 1rem; color: #0b0a0c; cursor: pointer; transition: 0.2s; width: 100%; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(184, 134, 11, 0.25); }
+        .btn-submit:hover { transform: scale(1.02); box-shadow: 0 12px 30px rgba(184, 134, 11, 0.4); }
+        .btn-danger { background: linear-gradient(145deg, #e57373, #c62828); box-shadow: 0 8px 20px rgba(198, 40, 40, 0.25); }
+        .btn-danger:hover { box-shadow: 0 12px 30px rgba(198, 40, 40, 0.4); }
+        .btn-secondary { background: linear-gradient(145deg, #6c5ce7, #4f46e5); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25); }
+        .btn-secondary:hover { box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); }
+        .btn-small { padding: 0.3rem 0.8rem; font-size: 0.8rem; width: auto; display: inline-block; }
+        .history-section { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 1.8rem 2rem; border: 1px solid #2f2628; margin-bottom: 2rem; }
+        .history-section h3 { color: #d4af37; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px dashed #2f2628; font-size: 0.95rem; }
+        .history-item:last-child { border-bottom: none; }
+        .history-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .history-date { color: #8a7e7e; font-size: 0.85rem; }
+        .history-profit-positive { color: #4caf50; }
+        .history-profit-negative { color: #e57373; }
+        .history-actions { display: flex; gap: 6px; }
+        .history-actions button { background: #1f181c; border: 1px solid #3a2e24; color: #ece6e0; padding: 0.2rem 0.6rem; border-radius: 20px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }
+        .history-actions .edit-btn:hover { border-color: #d4af37; color: #d4af37; }
+        .history-actions .delete-btn:hover { border-color: #e57373; color: #e57373; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #1a1418; border: 2px solid #b8963c; border-radius: 32px; padding: 2.5rem; max-width: 450px; width: 90%; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9); }
+        .modal-content h2 { color: #f0d78c; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .modal-content .form-group { margin-bottom: 1rem; }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .modal-actions .btn-submit { flex: 1; }
+        .modal-actions .btn-cancel { background: #2a2124; border: 1px solid #3a2e24; color: #ece6e0; padding: 0.9rem 2rem; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; }
+        .modal-actions .btn-cancel:hover { background: #3a2e24; }
+        .gs-settings { background: rgba(20, 16, 18, 0.5); border-radius: 16px; padding: 1rem 1.5rem; border: 1px solid #2f2628; margin-top: 1rem; }
+        .gs-settings .form-group { margin-bottom: 0.8rem; }
+        .gs-settings .form-group label { font-size: 0.8rem; }
+        .gs-settings .form-group input { padding: 0.5rem 1rem; font-size: 0.9rem; }
+        .gs-status { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; padding: 0.4rem 0; }
+        .gs-status .online { color: #4caf50; }
+        .gs-status .offline { color: #e57373; }
+        .daily-group-date { background: rgba(184, 150, 60, 0.1); color: #f0d78c; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; display: inline-block; margin: 0.5rem 0 0.2rem 0; }
+        .daily-group-date i { margin-right: 6px; }
+        .daily-group { border-bottom: 1px solid #2a2124; padding-bottom: 0.3rem; margin-bottom: 0.3rem; }
+        .daily-group:last-child { border-bottom: none; }
+        .footer { margin-top: 2rem; text-align: center; color: #5e4e4e; border-top: 1px solid #2a2124; padding-top: 2rem; font-size: 0.9rem; }
+        .footer i { color: #b8963c; }
+        .footer .imperial { color: #d4af37; font-weight: 600; letter-spacing: 2px; }
+        @media (max-width: 600px) { .logo h1 { font-size: 2rem; } .logo .subtitle { font-size: 0.7rem; display: block; margin-left: 0; margin-top: 4px; } .rank-table th, .rank-table td { padding: 0.7rem 0.4rem; font-size: 0.85rem; } .rank-table { font-size: 0.8rem; } .rank-badge { width: 26px; height: 26px; line-height: 26px; font-size: 0.7rem; } .header { flex-direction: column; align-items: flex-start; } .chart-container { height: 200px; } .player-avatar { width: 30px; height: 30px; } .player-avatar-placeholder { width: 30px; height: 30px; font-size: 0.8rem; } .history-item { flex-direction: column; align-items: flex-start; gap: 4px; } .history-actions { width: 100%; justify-content: flex-end; } .modal-content { padding: 1.5rem; } .rank-double { gap: 1rem; } .rank-double .rank-section { padding: 1rem; } .chart-controls { margin-left: 0; width: 100%; } .chart-controls select { flex: 1; } .chart-section h3 { flex-direction: column; align-items: flex-start; } .form-grid { grid-template-columns: 1fr; } .gs-settings .form-group input { font-size: 0.8rem; } }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1f181c; border: 1px solid #b8963c; color: #f0d78c; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8); z-index: 999; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 金錢雨容器 ===== -->
+    <div id="moneyRainContainer"></div>
+
+    <div class="container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <div class="logo">
+                <h1>
+                    🏯 雀界紫禁之巔
+                    <span class="subtitle">
+                        <i class="fas fa-crown"></i> 天下雀聖 · 唯我獨尊 <i class="fas fa-crown"></i>
+                    </span>
+                </h1>
+            </div>
+            <div class="header-date">
+                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: #b8963c;"></i>
+                <span id="todayDate"></span>
+            </div>
+        </div>
+
+        <!-- ===== 雙排行榜 ===== -->
+        <div class="rank-double">
+            <div class="rank-section">
+                <div class="section-title">
+                    <i class="fas fa-crown"></i>
+                    紫禁龍虎榜 ｜ 累計盈虧
+                </div>
+                <table class="rank-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>雀聖</th>
+                            <th>場次</th>
+                            <th>累計盈虧</th>
+                            <th>評級</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankBody"></tbody>
+                </table>
+            </div>
+
+            <div class="rank-section">
+                <div class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    紫禁風雲榜 ｜ 單日盈虧記錄
+                </div>
+                <div id="dailyRankBody" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- ===== 圖表 ===== -->
+        <div class="chart-section" id="chartSection">
+            <h3>
+                <i class="fas fa-chart-line"></i> 盈虧走勢圖
+                <div class="chart-controls">
+                    <select id="chartPlayerSelect" onchange="renderChart()">
+                        <option value="all">📊 所有玩家比較</option>
+                    </select>
+                    <button class="rain-toggle" id="rainToggle" onclick="toggleMoneyRain()">
+                        <i class="fas fa-coins"></i> 金錢雨
+                    </button>
+                </div>
+            </h3>
+            <div class="chart-container">
+                <canvas id="profitChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ===== 表單 ===== -->
+        <div class="form-grid">
+            <div class="form-card">
+                <h3><i class="fas fa-pen-fancy"></i> 記載戰績</h3>
+                <form id="addRecordForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> 雀聖之名</label>
+                        <select id="playerSelect" required>
+                            <option value="">— 揀選玩家 —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> 決戰之日</label>
+                        <input type="date" id="recordDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-coins"></i> 該日盈虧 (分數)</label>
+                        <input type="number" id="dailyProfit" placeholder="例如：+200 或 -150" required>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save"></i> 記載戰績
+                    </button>
+                </form>
+            </div>
+
+            <div class="form-card">
+                <h3><i class="fas fa-user-plus"></i> 新雀聖登錄</h3>
+                <form id="addPlayerForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> 雀聖名稱</label>
+                        <input type="text" id="newPlayerName" placeholder="例如：雀神、西門吹雪" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-image"></i> 上傳頭像</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn">
+                                <i class="fas fa-upload"></i> 揀選圖片
+                            </div>
+                            <input type="file" id="avatarUpload" accept="image/*">
+                        </div>
+                        <div class="avatar-preview" id="avatarPreview" style="display: none;">
+                            <img id="avatarPreviewImg" src="" alt="預覽">
+                            <span>已揀選頭像</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit btn-secondary">
+                        <i class="fas fa-user-plus"></i> 登錄紫禁之巔
+                    </button>
+                </form>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <h3 style="color:#d4af37;font-size:1.1rem;margin-bottom:1rem;">
+                    <i class="fas fa-edit"></i> 編輯玩家
+                </h3>
+                <div class="form-group">
+                    <label>揀選玩家</label>
+                    <select id="editPlayerSelect2" onchange="loadPlayerForEdit()">
+                        <option value="">— 揀選玩家 —</option>
+                    </select>
+                </div>
+                <div id="editPlayerArea" style="display:none;">
+                    <div class="form-group">
+                        <label>新名稱</label>
+                        <input type="text" id="editPlayerName2" placeholder="更改玩家名稱">
+                    </div>
+                    <div class="form-group">
+                        <label>更換頭像</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn" style="padding:0.5rem 1rem;font-size:0.85rem;">
+                                <i class="fas fa-upload"></i> 更換圖片
+                            </div>
+                            <input type="file" id="editAvatarUpload2" accept="image/*">
+                        </div>
+                        <div class="avatar-preview" id="editAvatarPreview2" style="display: none;">
+                            <img id="editAvatarPreviewImg2" src="" alt="預覽" style="width:40px;height:40px;">
+                            <span>新頭像</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" class="btn-submit btn-secondary" onclick="updatePlayer()" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;">
+                            <i class="fas fa-save"></i> 儲存更改
+                        </button>
+                        <button type="button" class="btn-submit btn-danger" onclick="toggleExile()" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;">
+                            <i class="fas fa-skull"></i> <span id="exileBtnText">打入冷宮</span>
+                        </button>
+                    </div>
+                    <div id="exileStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#e57373;"></div>
+                </div>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <!-- Google Drive 同步 -->
+                <div class="gs-settings">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                        <span style="color:#b8963c;font-weight:600;font-size:0.9rem;">
+                            <i class="fab fa-google-drive"></i> Google Drive 同步
+                        </span>
+                        <span id="driveStatus" class="gs-status offline">
+                            <i class="fas fa-circle"></i> 未連線
+                        </span>
+                    </div>
+
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button id="driveLoginBtn" onclick="signIn()" class="btn-submit btn-secondary" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;">
+                            <i class="fab fa-google"></i> 登入 Google
+                        </button>
+                        <button id="driveLogoutBtn" onclick="signOut()" class="btn-submit btn-danger" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;">
+                            <i class="fas fa-sign-out-alt"></i> 登出
+                        </button>
+                        <button id="driveSyncBtn" onclick="saveToDrive()" class="btn-submit" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;">
+                            <i class="fas fa-cloud-upload-alt"></i> 手動備份
+                        </button>
+                        <button id="driveLoadBtn" onclick="loadFromDrive()" class="btn-submit btn-secondary" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;">
+                            <i class="fas fa-cloud-download-alt"></i> 載入數據
+                        </button>
+                    </div>
+
+                    <div style="margin-top:0.5rem;font-size:0.75rem;color:#5e4e4e;">
+                        <i class="fas fa-info-circle"></i> 
+                        登入後，數據會自動同步到 Google Drive，電話同電腦都睇到！
+                    </div>
+                </div>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <button onclick="clearAllData()" class="btn-submit btn-danger" style="font-size: 0.9rem;">
+                    <i class="fas fa-trash"></i> 重置天下
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 歷史記錄 ===== -->
+        <div class="history-section">
+            <h3><i class="fas fa-scroll"></i> 武林史冊</h3>
+            <div id="historyList"></div>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <div class="footer">
+            <span class="imperial"><i class="fas fa-dragon"></i> 雀界紫禁之巔 · 以雀論英雄 <i class="fas fa-dragon"></i></span><br>
+            <span style="font-size: 0.8rem; color: #4a3e3e;">數據藏於君之器 · 天下紛爭盡在此 <i class="fas fa-dice"></i></span>
+        </div>
+
+    </div>
+
+    <!-- ===== Modal (編輯記錄) ===== -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <h2><i class="fas fa-edit"></i> 編輯戰績</h2>
+            <form id="editForm">
+                <input type="hidden" id="editRecordId">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> 雀聖</label>
+                    <select id="editPlayerSelect" required>
+                        <option value="">— 揀選玩家 —</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> 決戰之日</label>
+                    <input type="date" id="editDate" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-coins"></i> 該日盈虧 (分數)</label>
+                    <input type="number" id="editProfit" placeholder="例如：+200 或 -150" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save"></i> 儲存修改
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // DATA LAYER
+        // ================================================================
+
+        function loadData() {
+            const stored = localStorage.getItem('mahjongData');
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    return getDefaultData();
+                }
+            }
+            return getDefaultData();
+        }
+
+        function saveData(data) {
+            localStorage.setItem('mahjongData', JSON.stringify(data));
+        }
+
+        function getDefaultData() {
+            return {
+                players: [
+                    { id: 1, name: '龍爺', avatar: '', exiled: false },
+                    { id: 2, name: '虎妹', avatar: '', exiled: false },
+                    { id: 3, name: '雀后', avatar: '', exiled: false },
+                    { id: 4, name: '暗槓', avatar: '', exiled: false },
+                ],
+                records: [
+                    { id: 1, playerId: 1, date: '2026-07-25', profit: 200 },
+                    { id: 2, playerId: 1, date: '2026-07-26', profit: -50 },
+                    { id: 3, playerId: 1, date: '2026-07-27', profit: 300 },
+                    { id: 4, playerId: 2, date: '2026-07-25', profit: 150 },
+                    { id: 5, playerId: 2, date: '2026-07-26', profit: 100 },
+                    { id: 6, playerId: 2, date: '2026-07-27', profit: -80 },
+                    { id: 7, playerId: 3, date: '2026-07-25', profit: -100 },
+                    { id: 8, playerId: 3, date: '2026-07-26', profit: 50 },
+                    { id: 9, playerId: 3, date: '2026-07-27', profit: -30 },
+                    { id: 10, playerId: 4, date: '2026-07-25', profit: 80 },
+                    { id: 11, playerId: 4, date: '2026-07-26', profit: -20 },
+                    { id: 12, playerId: 4, date: '2026-07-27', profit: 120 },
+                ],
+                nextPlayerId: 5,
+                nextRecordId: 13
+            };
+        }
+
+        let data = loadData();
+        let tempAvatar = null;
+        let tempEditAvatar = null;
+        let editingPlayerId = null;
+        let moneyRainActive = false;
+        let rainInterval = null;
+
+        // ================================================================
+        // RATING SYSTEM
+        // ================================================================
+
+        function getRating(profit) {
+            if (profit >= 2000) return { label: '👑 皇上', class: 'rank-emperor' };
+            if (profit >= 1000) return { label: '🤴 親王', class: 'rank-king' };
+            if (profit >= 500) return { label: '🛡️ 公爵', class: 'rank-duke' };
+            if (profit >= 200) return { label: '⚔️ 伯爵', class: 'rank-earl' };
+            if (profit >= 0) return { label: '🐴 騎士', class: 'rank-knight' };
+            if (profit >= -300) return { label: '🛠️ 隨從', class: 'rank-squire' };
+            if (profit >= -800) return { label: '🌾 平民', class: 'rank-peasant' };
+            return { label: '❄️ 冷宮', class: 'rank-exile' };
+        }
+
+        // ================================================================
+        // HELPER FUNCTIONS
+        // ================================================================
+
+        function getPlayerName(id) {
+            const p = data.players.find(p => p.id === id);
+            return p ? p.name : '未知';
+        }
+
+        function getPlayerAvatar(id) {
+            const p = data.players.find(p => p.id === id);
+            return p && p.avatar ? p.avatar : null;
+        }
+
+        function isPlayerExiled(id) {
+            const p = data.players.find(p => p.id === id);
+            return p ? p.exiled || false : false;
+        }
+
+        function getPlayerRecords(playerId) {
+            return data.records.filter(r => r.playerId === playerId).sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function getTotalProfit(playerId) {
+            return getPlayerRecords(playerId).reduce((sum, r) => sum + r.profit, 0);
+        }
+
+        function getPlayerGames(playerId) {
+            return getPlayerRecords(playerId).length;
+        }
+
+        function getPlayerProfitHistory(playerId) {
+            const records = getPlayerRecords(playerId);
+            let cumulative = 0;
+            return records.map(r => {
+                cumulative += r.profit;
+                return { date: r.date, cumulative: cumulative };
+            });
+        }
+
+        function getAllDates() {
+            const dates = new Set();
+            data.records.forEach(r => dates.add(r.date));
+            return Array.from(dates).sort();
+        }
+
+        function getAvatarHtml(player, index) {
+            if (player.avatar) {
+                return `<img class="player-avatar" src="${player.avatar}" alt="${player.name}" style="width:30px;height:30px;">`;
+            } else {
+                const icons = ['fa-dragon', 'fa-tiger', 'fa-chess-queen', 'fa-user-ninja', 'fa-hat-wizard', 'fa-hand-sparkles',
+                    'fa-crown', 'fa-star', 'fa-feather', 'fa-bolt'
+                ];
+                const icon = icons[index % icons.length];
+                return `<div class="player-avatar-placeholder" style="width:30px;height:30px;font-size:0.9rem;"><i class="fas ${icon}"></i></div>`;
+            }
+        }
+
+        // ================================================================
+        // RENDER FUNCTIONS
+        // ================================================================
+
+        let chartInstance = null;
+
+        function renderRanking() {
+            const tbody = document.getElementById('rankBody');
+            const sorted = [...data.players]
+                .map(p => ({
+                    ...p,
+                    totalProfit: getTotalProfit(p.id),
+                    games: getPlayerGames(p.id)
+                }))
+                .sort((a, b) => b.totalProfit - a.totalProfit);
+
+            tbody.innerHTML = '';
+            sorted.forEach((p, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                if (rank === 1) rankClass = 'rank-1';
+                else if (rank === 2) rankClass = 'rank-2';
+                else if (rank === 3) rankClass = 'rank-3';
+
+                const profitClass = p.totalProfit >= 0 ? 'profit-positive' : 'profit-negative';
+                const profitSymbol = p.totalProfit >= 0 ? '+' : '';
+
+                const rating = getRating(p.totalProfit);
+                let avatarHtml = getAvatarHtml(p, index);
+                const exiledMark = p.exiled ? ' 🚫' : '';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                        <td class="player-name">${avatarHtml} ${p.name}${exiledMark}</td>
+                        <td>${p.games}</td>
+                        <td class="profit ${profitClass}">${profitSymbol}${p.totalProfit.toLocaleString()}</td>
+                        <td><span class="rank-badge-large ${rating.class}">${rating.label}</span></td>
+                    `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderDailyRanking() {
+            const container = document.getElementById('dailyRankBody');
+            const allDates = getAllDates().reverse();
+
+            if (allDates.length === 0) {
+                container.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有記錄</p>';
+                return;
+            }
+
+            let html = '';
+            allDates.forEach(date => {
+                const dayRecords = data.records.filter(r => r.date === date);
+                const dayTotal = dayRecords.reduce((sum, r) => sum + r.profit, 0);
+                const totalClass = dayTotal >= 0 ? 'profit-positive' : 'profit-negative';
+                const totalSymbol = dayTotal >= 0 ? '+' : '';
+
+                html += `
+                        <div class="daily-group">
+                            <div class="daily-group-date">
+                                <i class="fas fa-calendar-day"></i> ${date}
+                                <span style="margin-left:12px;font-weight:700;color:${dayTotal >= 0 ? '#4caf50' : '#e57373'}">
+                                    全日總和：${totalSymbol}${dayTotal}
+                                </span>
+                            </div>
+                    `;
+
+                const sortedRecords = [...dayRecords].sort((a, b) => b.profit - a.profit);
+
+                sortedRecords.forEach((r, idx) => {
+                    const profitClass = r.profit >= 0 ? 'profit-positive' : 'profit-negative';
+                    const symbol = r.profit >= 0 ? '+' : '';
+                    const icon = r.profit >= 0 ? '🏆' : '💀';
+                    const rank = idx + 1;
+
+                    const player = data.players.find(p => p.id === r.playerId);
+                    const avatarHtml = player ? getAvatarHtml(player, idx) : '';
+
+                    html += `
+                            <div class="history-item" style="padding:0.4rem 0.4rem 0.4rem 0.8rem;font-size:0.9rem;">
+                                <div class="history-info">
+                                    <span style="font-weight:600;color:${rank === 1 && r.profit > 0 ? '#f7d875' : rank === 1 && r.profit < 0 ? '#e57373' : '#ece6e0'}">#${rank}</span>
+                                    ${avatarHtml}
+                                    <span>${getPlayerName(r.playerId)}</span>
+                                    <span class="${profitClass}" style="font-weight:700;">${symbol}${r.profit}</span>
+                                    ${r.profit >= 50 ? ' 🔥' : ''}
+                                    ${r.profit <= -50 ? ' ❄️' : ''}
+                                </div>
+                                <div style="font-size:0.75rem;color:#5e4e4e;">
+                                    ${icon}
+                                </div>
+                            </div>
+                        `;
+                });
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderPlayerSelect() {
+            const selects = ['playerSelect', 'editPlayerSelect', 'editPlayerSelect2'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">— 揀選玩家 —</option>';
+                data.players.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name + (p.exiled ? ' 🚫' : '');
+                    select.appendChild(option);
+                });
+                if (currentValue && data.players.some(p => p.id == currentValue)) {
+                    select.value = currentValue;
+                }
+            });
+
+            const chartSelect = document.getElementById('chartPlayerSelect');
+            const chartValue = chartSelect.value;
+            chartSelect.innerHTML = '<option value="all">📊 所有玩家比較</option>';
+            data.players.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = `👤 ${p.name}` + (p.exiled ? ' 🚫' : '');
+                chartSelect.appendChild(option);
+            });
+            if (chartValue && data.players.some(p => p.id == chartValue)) {
+                chartSelect.value = chartValue;
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            const sorted = [...data.records].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+            container.innerHTML = '';
+            if (sorted.length === 0) {
+                container.innerHTML = '<p style="color: #5e4e4e; text-align: center;">武林史冊尚未有記載...</p>';
+                return;
+            }
+            sorted.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                const profitClass = r.profit >= 0 ? 'history-profit-positive' : 'history-profit-negative';
+                const symbol = r.profit >= 0 ? '+' : '';
+                div.innerHTML = `
+                        <div class="history-info">
+                            <span><strong>${getPlayerName(r.playerId)}</strong></span>
+                            <span class="${profitClass}">${symbol}${r.profit}</span>
+                            <span class="history-date">${r.date}</span>
+                        </div>
+                        <div class="history-actions">
+                            <button class="edit-btn" onclick="openEditModal(${r.id})"><i class="fas fa-edit"></i></button>
+                            <button class="delete-btn" onclick="deleteRecord(${r.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            const selected = document.getElementById('chartPlayerSelect').value;
+
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+
+            if (data.records.length === 0 || data.players.length === 0) return;
+
+            const allDates = getAllDates();
+            if (allDates.length === 0) return;
+
+            let datasets = [];
+
+            if (selected === 'all') {
+                const colors = ['#d4af37', '#4caf50', '#42a5f5', '#ab47bc', '#ff7043', '#26c6da', '#ec407a', '#66bb6a'];
+
+                data.players.forEach((player, idx) => {
+                    const history = getPlayerProfitHistory(player.id);
+                    if (history.length === 0) return;
+
+                    const profitMap = {};
+                    history.forEach(h => { profitMap[h.date] = h.cumulative; });
+
+                    const dataPoints = allDates.map(date => profitMap[date] || null);
+
+                    if (dataPoints.some(d => d !== null)) {
+                        datasets.push({
+                            label: player.name + (player.exiled ? ' 🚫' : ''),
+                            data: dataPoints,
+                            borderColor: colors[idx % colors.length],
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: colors[idx % colors.length],
+                            pointRadius: 3,
+                            tension: 0.3,
+                            fill: false,
+                            spanGaps: true,
+                        });
+                    }
+                });
+
+                if (datasets.length === 0) return;
+
+            } else {
+                const playerId = parseInt(selected);
+                const player = data.players.find(p => p.id === playerId);
+                if (!player) return;
+
+                const history = getPlayerProfitHistory(playerId);
+                if (history.length === 0) return;
+
+                datasets = [{
+                    label: player.name + (player.exiled ? ' 🚫' : ''),
+                    data: history.map(h => h.cumulative),
+                    borderColor: '#d4af37',
+                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#f7d875',
+                    pointBorderColor: '#b8860b',
+                    pointRadius: 5,
+                    tension: 0.3,
+                    fill: true,
+                }];
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: allDates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ece6e0', font: { size: 12, weight: 'bold' } }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8a7e7e' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#8a7e7e' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function renderAll() {
+            renderRanking();
+            renderDailyRanking();
+            renderPlayerSelect();
+            renderHistory();
+            renderChart();
+            updateDate();
+            updateExileStatus();
+            updateDriveStatus();
+        }
+
+        function updateDate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            document.getElementById('todayDate').textContent = `${y}-${m}-${d} ｜ 第 ${Math.ceil(now.getDate()/7)} 週`;
+            if (!document.getElementById('recordDate').value) {
+                document.getElementById('recordDate').value = `${y}-${m}-${d}`;
+            }
+        }
+
+        function updateExileStatus() {
+            const statusDiv = document.getElementById('exileStatus');
+            if (editingPlayerId) {
+                const player = data.players.find(p => p.id === editingPlayerId);
+                if (player) {
+                    statusDiv.textContent = player.exiled ? '🚫 此雀聖已被打入冷宮' : '✅ 此雀聖仍在朝中';
+                    document.getElementById('exileBtnText').textContent = player.exiled ? '召回返朝' : '打入冷宮';
+                }
+            }
+        }
+
+        // ================================================================
+        // EDIT PLAYER FUNCTIONS
+        // ================================================================
+
+        function loadPlayerForEdit() {
+            const select = document.getElementById('editPlayerSelect2');
+            const id = parseInt(select.value);
+            if (!id) {
+                document.getElementById('editPlayerArea').style.display = 'none';
+                editingPlayerId = null;
+                return;
+            }
+
+            const player = data.players.find(p => p.id === id);
+            if (!player) return;
+
+            editingPlayerId = id;
+            document.getElementById('editPlayerArea').style.display = 'block';
+            document.getElementById('editPlayerName2').value = player.name;
+            document.getElementById('editAvatarPreview2').style.display = 'none';
+            document.getElementById('editAvatarUpload2').value = '';
+            tempEditAvatar = null;
+            updateExileStatus();
+        }
+
+        document.getElementById('editAvatarUpload2').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempEditAvatar = event.target.result;
+                const preview = document.getElementById('editAvatarPreview2');
+                const img = document.getElementById('editAvatarPreviewImg2');
+                img.src = tempEditAvatar;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function updatePlayer() {
+            if (!editingPlayerId) {
+                showToast('⚠️ 請先揀選玩家');
+                return;
+            }
+
+            const player = data.players.find(p => p.id === editingPlayerId);
+            if (!player) return;
+
+            const newName = document.getElementById('editPlayerName2').value.trim();
+            if (newName && newName !== player.name) {
+                if (data.players.some(p => p.name === newName && p.id !== editingPlayerId)) {
+                    showToast('⚠️ 名稱已被使用');
+                    return;
+                }
+                player.name = newName;
+            }
+
+            if (tempEditAvatar) {
+                player.avatar = tempEditAvatar;
+                tempEditAvatar = null;
+                document.getElementById('editAvatarPreview2').style.display = 'none';
+            }
+
+            saveData(data);
+            renderAll();
+            showToast(`✅ 已更新 ${player.name} 嘅資料`);
+            syncAfterAction();
+        }
+
+        function toggleExile() {
+            if (!editingPlayerId) {
+                showToast('⚠️ 請先揀選玩家');
+                return;
+            }
+
+            const player = data.players.find(p => p.id === editingPlayerId);
+            if (!player) return;
+
+            player.exiled = !player.exiled;
+            saveData(data);
+            renderAll();
+            updateExileStatus();
+            showToast(player.exiled ? `❄️ ${player.name} 已被打入冷宮` : `👑 ${player.name} 已召回返朝`);
+            syncAfterAction();
+        }
+
+        // ================================================================
+        // IMAGE UPLOAD
+        // ================================================================
+
+        document.getElementById('avatarUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempAvatar = event.target.result;
+                const preview = document.getElementById('avatarPreview');
+                const img = document.getElementById('avatarPreviewImg');
+                img.src = tempAvatar;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // ================================================================
+        // ACTION FUNCTIONS
+        // ================================================================
+
+        document.getElementById('addPlayerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('newPlayerName');
+            const name = nameInput.value.trim();
+            if (!name) {
+                showToast('⚠️ 請輸入雀聖之名');
+                return;
+            }
+            if (data.players.some(p => p.name === name)) {
+                showToast('⚠️ 此雀聖已登錄紫禁之巔');
+                return;
+            }
+
+            const newPlayer = {
+                id: data.nextPlayerId++,
+                name: name,
+                avatar: tempAvatar || '',
+                exiled: false
+            };
+
+            data.players.push(newPlayer);
+            saveData(data);
+            renderAll();
+
+            await syncAfterAction();
+
+            nameInput.value = '';
+            tempAvatar = null;
+            document.getElementById('avatarPreview').style.display = 'none';
+            document.getElementById('avatarPreviewImg').src = '';
+            document.getElementById('avatarUpload').value = '';
+
+            showToast(`🏯 歡迎 ${name} 登錄紫禁之巔！`);
+        });
+
+        document.getElementById('addRecordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const playerId = parseInt(document.getElementById('playerSelect').value);
+            const date = document.getElementById('recordDate').value;
+            const profit = parseInt(document.getElementById('dailyProfit').value);
+
+            if (!playerId) {
+                showToast('⚠️ 請揀選雀聖');
+                return;
+            }
+            if (!date) {
+                showToast('⚠️ 請揀選決戰之日');
+                return;
+            }
+            if (isNaN(profit)) {
+                showToast('⚠️ 請輸入有效嘅盈虧數字');
+                return;
+            }
+
+            const newRecord = {
+                id: data.nextRecordId++,
+                playerId: playerId,
+                date: date,
+                profit: profit
+            };
+
+            data.records.push(newRecord);
+            saveData(data);
+            document.getElementById('dailyProfit').value = '';
+            renderAll();
+
+            await syncAfterAction();
+
+            if (profit > 0) {
+                triggerMoneyRain(3);
+            }
+
+            showToast(`⚔️ 已記載 ${getPlayerName(playerId)} 嘅戰績：${profit >= 0 ? '+' : ''}${profit}`);
+        });
+
+        // ================================================================
+        // EDIT & DELETE RECORDS
+        // ================================================================
+
+        function openEditModal(recordId) {
+            const record = data.records.find(r => r.id === recordId);
+            if (!record) return;
+
+            document.getElementById('editRecordId').value = recordId;
+            document.getElementById('editPlayerSelect').value = record.playerId;
+            document.getElementById('editDate').value = record.date;
+            document.getElementById('editProfit').value = record.profit;
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const recordId = parseInt(document.getElementById('editRecordId').value);
+            const playerId = parseInt(document.getElementById('editPlayerSelect').value);
+            const date = document.getElementById('editDate').value;
+            const profit = parseInt(document.getElementById('editProfit').value);
+
+            if (!playerId) {
+                showToast('⚠️ 請揀選雀聖');
+                return;
+            }
+            if (!date) {
+                showToast('⚠️ 請揀選決戰之日');
+                return;
+            }
+            if (isNaN(profit)) {
+                showToast('⚠️ 請輸入有效嘅盈虧數字');
+                return;
+            }
+
+            const record = data.records.find(r => r.id === recordId);
+            if (record) {
+                const oldData = { ...record };
+                record.playerId = playerId;
+                record.date = date;
+                record.profit = profit;
+                saveData(data);
+                renderAll();
+                closeEditModal();
+
+                await syncAfterAction();
+
+                showToast(`✅ 已更新戰績！`);
+                if (profit > 0) {
+                    triggerMoneyRain(2);
+                }
+            }
+        });
+
+        function deleteRecord(recordId) {
+            if (!confirm('⚠️ 確定要刪除呢條記錄？')) return;
+
+            const record = data.records.find(r => r.id === recordId);
+            data.records = data.records.filter(r => r.id !== recordId);
+            saveData(data);
+            renderAll();
+            showToast('🗑️ 記錄已刪除');
+            syncAfterAction();
+        }
+
+        // ================================================================
+        // GOOGLE DRIVE SYNC
+        // ================================================================
+
+        // ✅ 你嘅憑證已加入！
+        const CLIENT_ID = '622524056299-vvqn4sf1t6tk05hh2jga9pdkeb9rl7d9.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyDPgLWLrBrX8XwKlDE4AfjzpVPFcPdIxic';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const FILE_NAME = 'mahjong_data.json';
+
+        let tokenClient = null;
+        let gapiReady = false;
+        let isLoggedIn = false;
+
+        function initGapi() {
+            if (typeof gapi === 'undefined') {
+                console.warn('gapi not loaded yet, retrying...');
+                setTimeout(initGapi, 1000);
+                return;
+            }
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({
+                        apiKey: API_KEY,
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                    });
+                    gapiReady = true;
+                    console.log('✅ Google API 已初始化');
+
+                    const token = gapi.client.getToken();
+                    if (token) {
+                        isLoggedIn = true;
+                        updateDriveStatus();
+                        loadFromDrive();
+                    }
+                } catch (error) {
+                    console.error('Google API 初始化失敗:', error);
+                }
+            });
+        }
+
+        function signIn() {
+            if (!gapiReady) {
+                showToast('⏳ 請稍等，Google API 初始化中...');
+                return;
+            }
+
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse.access_token) {
+                        gapi.client.setToken(tokenResponse);
+                        isLoggedIn = true;
+                        updateDriveStatus();
+                        showToast('✅ 已登入 Google！');
+                        loadFromDrive();
+                    } else {
+                        showToast('❌ 登入失敗，請再試一次');
+                    }
+                },
+            });
+            tokenClient.requestAccessToken();
+        }
+
+        function signOut() {
+            const token = gapi.client.getToken();
+            if (token) {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    gapi.client.setToken(null);
+                    isLoggedIn = false;
+                    updateDriveStatus();
+                    showToast('👋 已登出');
+                });
+            }
+        }
+
+        function updateDriveStatus() {
+            const statusEl = document.getElementById('driveStatus');
+            const loginBtn = document.getElementById('driveLoginBtn');
+            const logoutBtn = document.getElementById('driveLogoutBtn');
+            const syncBtn = document.getElementById('driveSyncBtn');
+            const loadBtn = document.getElementById('driveLoadBtn');
+
+            if (isLoggedIn) {
+                if (statusEl) {
+                    statusEl.className = 'gs-status online';
+                    statusEl.innerHTML = '<i class="fas fa-circle"></i> 已連線 ✅';
+                }
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (logoutBtn) logoutBtn.style.display = 'inline-block';
+                if (syncBtn) syncBtn.style.display = 'inline-block';
+                if (loadBtn) loadBtn.style.display = 'inline-block';
+            } else {
+                if (statusEl) {
+                    statusEl.className = 'gs-status offline';
+                    statusEl.innerHTML = '<i class="fas fa-circle"></i> 未連線 ❌';
+                }
+                if (loginBtn) loginBtn.style.display = 'inline-block';
+                if (logoutBtn) logoutBtn.style.display = 'none';
+                if (syncBtn) syncBtn.style.display = 'none';
+                if (loadBtn) loadBtn.style.display = 'none';
+            }
+        }
+
+        async function loadFromDrive() {
+            if (!isLoggedIn) {
+                showToast('⚠️ 請先登入 Google');
+                return false;
+            }
+
+            try {
+                showToast('⏳ 正在載入數據...');
+
+                const response = await gapi.client.drive.files.list({
+                    q: `name='${FILE_NAME}' and trashed=false`,
+                    fields: 'files(id, name, modifiedTime)'
+                });
+
+                const files = response.result.files;
+                let fileId;
+
+                if (files.length === 0) {
+                    showToast('📁 未找到數據檔案，建立新檔案...');
+                    fileId = await createFile();
+                    if (!fileId) {
+                        showToast('❌ 建立檔案失敗');
+                        return false;
+                    }
+                } else {
+                    fileId = files[0].id;
+                    console.log('📁 找到檔案:', files[0].name, '最後修改:', files[0].modifiedTime);
+                }
+
+                const fileResponse = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                        headers: {
+                            'Authorization': `Bearer ${gapi.client.getToken().access_token}`
+                        }
+                    }
+                );
+
+                if (!fileResponse.ok) {
+                    throw new Error(`下載失敗: ${fileResponse.status}`);
+                }
+
+                const content = await fileResponse.text();
+
+                let remoteData;
+                if (content.trim() === '') {
+                    remoteData = getDefaultData();
+                } else {
+                    remoteData = JSON.parse(content);
+                }
+
+                if (remoteData.players || remoteData.records) {
+                    data.players = remoteData.players || [];
+                    data.records = remoteData.records || [];
+                    data.nextPlayerId = remoteData.nextPlayerId || 1;
+                    data.nextRecordId = remoteData.nextRecordId || 1;
+
+                    saveData(data);
+                    renderAll();
+                    showToast(`✅ 已從 Google Drive 載入數據！（${data.players.length} 位玩家，${data.records.length} 條記錄）`);
+                    return true;
+                } else {
+                    showToast('⚠️ 數據格式不正確，使用本地數據');
+                    return false;
+                }
+
+            } catch (error) {
+                console.error('Load from Drive error:', error);
+                showToast('⚠️ 無法載入 Google Drive 數據，使用本地數據');
+                return false;
+            }
+        }
+
+        async function createFile() {
+            try {
+                const initialData = {
+                    players: data.players || [],
+                    records: data.records || [],
+                    nextPlayerId: data.nextPlayerId || 1,
+                    nextRecordId: data.nextRecordId || 1,
+                    created: new Date().toISOString()
+                };
+
+                const metadata = {
+                    name: FILE_NAME,
+                    mimeType: 'application/json'
+                };
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([JSON.stringify(initialData, null, 2)], { type: 'application/json' }));
+
+                const response = await fetch(
+                    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${gapi.client.getToken().access_token}`
+                        },
+                        body: form
+                    }
+                );
+
+                const result = await response.json();
+                if (result.id) {
+                    showToast('✅ 已建立新數據檔案！');
+                    return result.id;
+                } else {
+                    console.error('Create file error:', result);
+                    return null;
+                }
+
+            } catch (error) {
+                console.error('Create file error:', error);
+                return null;
+            }
+        }
+
+        async function saveToDrive() {
+            if (!isLoggedIn) {
+                showToast('⚠️ 請先登入 Google');
+                return false;
+            }
+
+            try {
+                showToast('⏳ 正在儲存到 Google Drive...');
+
+                const listResponse = await gapi.client.drive.files.list({
+                    q: `name='${FILE_NAME}' and trashed=false`,
+                    fields: 'files(id)'
+                });
+
+                const files = listResponse.result.files;
+                let fileId;
+
+                if (files.length === 0) {
+                    fileId = await createFile();
+                    if (!fileId) {
+                        showToast('❌ 建立檔案失敗');
+                        return false;
+                    }
+                } else {
+                    fileId = files[0].id;
+                }
+
+                const dataToSave = {
+                    players: data.players,
+                    records: data.records,
+                    nextPlayerId: data.nextPlayerId,
+                    nextRecordId: data.nextRecordId,
+                    lastUpdated: new Date().toISOString(),
+                    totalPlayers: data.players.length,
+                    totalRecords: data.records.length
+                };
+
+                const response = await fetch(
+                    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataToSave, null, 2)
+                    }
+                );
+
+                if (response.ok) {
+                    showToast(`✅ 數據已儲存到 Google Drive！（${data.players.length} 位玩家，${data.records.length} 條記錄）`);
+                    return true;
+                } else {
+                    const error = await response.text();
+                    console.error('Save error:', error);
+                    showToast('❌ 儲存失敗：' + error);
+                    return false;
+                }
+
+            } catch (error) {
+                console.error('Save to Drive error:', error);
+                showToast('❌ 儲存到 Google Drive 失敗');
+                return false;
+            }
+        }
+
+        async function syncAfterAction() {
+            if (isLoggedIn) {
+                await saveToDrive();
+            }
+        }
+
+        // ================================================================
+        // MONEY RAIN
+        // ================================================================
+
+        function toggleMoneyRain() {
+            if (moneyRainActive) {
+                stopMoneyRain();
+            } else {
+                startMoneyRain();
+            }
+        }
+
+        function startMoneyRain() {
+            moneyRainActive = true;
+            const btn = document.querySelector('.rain-toggle');
+            if (btn) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-stop"></i> 停止金錢雨';
+            }
+            triggerMoneyRain(50);
+        }
+
+        function stopMoneyRain() {
+            moneyRainActive = false;
+            const btn = document.querySelector('.rain-toggle');
+            if (btn) {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fas fa-coins"></i> 金錢雨';
+            }
+            if (rainInterval) {
+                clearInterval(rainInterval);
+                rainInterval = null;
+            }
+        }
+
+        function triggerMoneyRain(count = 10) {
+            const container = document.getElementById('moneyRainContainer');
+            const coins = ['💰', '🪙', '💎', '✨'];
+
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'coin';
+                    coin.textContent = coins[Math.floor(Math.random() * coins.length)];
+                    coin.style.left = Math.random() * 100 + '%';
+                    coin.style.fontSize = (18 + Math.random() * 24) + 'px';
+                    coin.style.animationDuration = (2 + Math.random() * 3) + 's';
+                    coin.style.animationDelay = (Math.random() * 0.5) + 's';
+                    container.appendChild(coin);
+
+                    setTimeout(() => {
+                        if (coin.parentNode) {
+                            coin.remove();
+                        }
+                    }, 5000);
+                }, i * 100);
+            }
+
+            if (moneyRainActive) {
+                if (rainInterval) clearInterval(rainInterval);
+                rainInterval = setInterval(() => {
+                    if (moneyRainActive) {
+                        for (let i = 0; i < 3; i++) {
+                            const coin = document.createElement('div');
+                            coin.className = 'coin';
+                            coin.textContent = coins[Math.floor(Math.random() * coins.length)];
+                            coin.style.left = Math.random() * 100 + '%';
+                            coin.style.fontSize = (18 + Math.random() * 24) + 'px';
+                            coin.style.animationDuration = (2 + Math.random() * 3) + 's';
+                            container.appendChild(coin);
+                            setTimeout(() => {
+                                if (coin.parentNode) {
+                                    coin.remove();
+                                }
+                            }, 5000);
+                        }
+                    } else {
+                        clearInterval(rainInterval);
+                        rainInterval = null;
+                    }
+                }, 800);
+            }
+        }
+
+        document.getElementById('chartSection').addEventListener('click', function(e) {
+            if (e.target.closest('.rain-toggle') || e.target.closest('select')) return;
+            triggerMoneyRain(5);
+        });
+
+        // ================================================================
+        // CLEAR ALL DATA
+        // ================================================================
+
+        function clearAllData() {
+            if (confirm('⚠️ 確定要重置天下？紫禁之巔將回歸混沌！')) {
+                data = getDefaultData();
+                data.nextPlayerId = 5;
+                data.nextRecordId = 13;
+                saveData(data);
+                renderAll();
+                showToast('🏯 天下已重置，群雄再起！');
+                syncAfterAction();
+            }
+        }
+
+        // ================================================================
+        // TOAST NOTIFICATION
+        // ================================================================
+
+        function showToast(message) {
+            const old = document.querySelector('.toast');
+            if (old) old.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = '0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ================================================================
+        // INIT
+        // ================================================================
+
+        window.onload = function() {
+            data = loadData();
+            renderAll();
+            initGapi();
+            updateDriveStatus();
+            setTimeout(() => triggerMoneyRain(8), 500);
+        };
+
+        document.getElementById('chartPlayerSelect').addEventListener('change', function() {
+            renderChart();
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeEditModal();
+        });
+    </script>
+
+</body>
+</html>
