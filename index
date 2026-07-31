@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏯 雀界紫禁之巔｜麻將盈虧追蹤</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'PingFang HK', system-ui, sans-serif; background: #0b0a0c; background-image: radial-gradient(circle at 20% 30%, #1a1418 0%, #0b0a0c 90%); color: #ece6e0; min-height: 100vh; padding: 2rem 1rem; overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+        #moneyRainContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .coin { position: absolute; font-size: 24px; animation: coinFall linear infinite; opacity: 0; color: #f7d875; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+        @keyframes coinFall { 0% { transform: translateY(-50px) rotate(0deg) scale(0.5); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg) scale(1); opacity: 0; } }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #b8963c; padding-bottom: 1.2rem; }
+        .logo h1 { font-size: 2.8rem; font-weight: 800; background: linear-gradient(135deg, #f7d875, #b8860b); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: 2px; text-shadow: 0 0 15px rgba(184, 134, 11, 0.3); }
+        .logo .subtitle { font-size: 0.9rem; color: #b8963c; margin-left: 12px; font-weight: 300; letter-spacing: 3px; }
+        .logo .subtitle i { color: #d4af37; margin: 0 4px; }
+        .header-date { background: #1f181c; padding: 0.5rem 1.5rem; border-radius: 40px; border: 1px solid #b8963c; font-weight: 500; color: #f0d78c; font-size: 0.95rem; }
+        .tab-bar { display: flex; gap: 0.5rem; margin-bottom: 2rem; background: rgba(20, 16, 18, 0.8); border-radius: 16px; padding: 0.5rem; border: 1px solid #2f2628; overflow-x: auto; flex-wrap: nowrap; }
+        .tab-btn { flex: 1; min-width: 80px; padding: 0.8rem 1.5rem; border: none; border-radius: 12px; background: transparent; color: #8a7e7e; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+        .tab-btn:hover { color: #f0d78c; background: rgba(184, 150, 60, 0.1); }
+        .tab-btn.active { background: linear-gradient(145deg, #d4af37, #b8860b); color: #0b0a0c; box-shadow: 0 4px 20px rgba(184, 134, 11, 0.3); }
+        .tab-btn i { font-size: 1.2rem; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .rank-section { background: rgba(20, 16, 18, 0.8); backdrop-filter: blur(6px); border-radius: 32px; padding: 2rem 2rem 1.8rem; border: 1px solid #3a2e24; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7); margin-bottom: 2rem; }
+        .section-title { display: flex; align-items: center; gap: 12px; font-size: 1.7rem; font-weight: 700; color: #f0d78c; margin-bottom: 1.8rem; }
+        .section-title i { color: #d4af37; font-size: 2rem; }
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+        .rank-table th { text-align: left; padding: 1rem 0.8rem; color: #b8963c; font-weight: 600; letter-spacing: 1px; border-bottom: 1px solid #3a2e24; text-transform: uppercase; font-size: 0.85rem; }
+        .rank-table td { padding: 1rem 0.8rem; border-bottom: 1px solid #2a2124; vertical-align: middle; }
+        .rank-table tr:last-child td { border-bottom: none; }
+        .rank-table tr:hover td { background: rgba(184, 150, 60, 0.06); }
+        .rank-badge { display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; background: #1f181c; border-radius: 50%; font-weight: 700; color: #d4af37; border: 1px solid #b8963c; font-size: 0.9rem; }
+        .rank-1 { background: #d4af37; color: #0b0a0c; border-color: #f7d875; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .rank-2 { background: #a8a8a8; color: #0b0a0c; border-color: #c0c0c0; }
+        .rank-3 { background: #cd7f32; color: #0b0a0c; border-color: #daa06d; }
+        .rank-gold { background: linear-gradient(145deg, #ffd700, #ff8c00); color: #0b0a0c; border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        .rank-silver { background: linear-gradient(145deg, #c0c0c0, #8a8a8a); color: #0b0a0c; border-color: #c0c0c0; }
+        .rank-bronze { background: linear-gradient(145deg, #cd7f32, #8b5a2b); color: #0b0a0c; border-color: #cd7f32; }
+        .player-name { font-weight: 600; display: flex; align-items: center; gap: 12px; }
+        .player-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #b8963c; background: #1f181c; }
+        .player-avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background: #1f181c; border: 2px solid #3a2e24; display: flex; align-items: center; justify-content: center; color: #5e4e4e; font-size: 1.2rem; }
+        .profit { font-weight: 700; letter-spacing: 0.5px; }
+        .profit-positive { color: #4caf50; }
+        .profit-negative { color: #e57373; }
+        .profit-record { color: #ffd700; }
+        .rank-badge-large { display: inline-block; padding: 0.2rem 0.8rem; border-radius: 40px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
+        .rank-emperor { background: linear-gradient(145deg, #f7d875, #b8860b); color: #0b0a0c; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .rank-king { background: linear-gradient(145deg, #e8a87c, #d4845a); color: #0b0a0c; }
+        .rank-duke { background: linear-gradient(145deg, #a8d8ea, #6bb5d4); color: #0b0a0c; }
+        .rank-earl { background: linear-gradient(145deg, #b8a9c9, #8a7aa8); color: #0b0a0c; }
+        .rank-knight { background: linear-gradient(145deg, #a8c9a8, #6b8f6b); color: #0b0a0c; }
+        .rank-squire { background: linear-gradient(145deg, #c9b8a8, #8f7a6b); color: #0b0a0c; }
+        .rank-peasant { background: linear-gradient(145deg, #c9c9c9, #8a8a8a); color: #0b0a0c; }
+        .rank-exile { background: linear-gradient(145deg, #e57373, #c62828); color: #ffffff; box-shadow: 0 0 20px rgba(198, 40, 40, 0.3); }
+        .rank-double { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 800px) { .rank-double { grid-template-columns: 1fr; } }
+        .rank-double .rank-section { margin-bottom: 0; }
+        .rank-double .rank-section .section-title { font-size: 1.3rem; margin-bottom: 1rem; }
+        .rank-double .rank-section .section-title i { font-size: 1.5rem; }
+        .rank-double .rank-table th, .rank-double .rank-table td { padding: 0.7rem 0.6rem; font-size: 0.9rem; }
+        .rank-double .rank-badge { width: 26px; height: 26px; line-height: 26px; font-size: 0.75rem; }
+        .rank-double .player-avatar { width: 30px; height: 30px; }
+        .rank-double .player-avatar-placeholder { width: 30px; height: 30px; font-size: 0.9rem; }
+        .chart-section { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 2rem; border: 1px solid #2f2628; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .chart-section h3 { color: #d4af37; margin-bottom: 1.5rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .chart-container { position: relative; height: 320px; }
+        .chart-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+        .chart-controls select, .chart-controls button { background: #1f181c; border: 1px solid #3a2e24; padding: 0.4rem 1rem; border-radius: 40px; color: #ece6e0; font-size: 0.85rem; outline: none; cursor: pointer; }
+        .chart-controls select:focus { border-color: #d4af37; }
+        .chart-controls select option { background: #1f181c; color: #ece6e0; }
+        .chart-controls .btn-time { background: #1f181c; border: 1px solid #3a2e24; padding: 0.4rem 1rem; border-radius: 40px; color: #ece6e0; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .chart-controls .btn-time:hover { border-color: #d4af37; color: #d4af37; }
+        .chart-controls .btn-time.active { background: #d4af37; color: #0b0a0c; border-color: #d4af37; }
+        .rain-toggle { background: linear-gradient(145deg, #d4af37, #b8860b); border: none; padding: 0.4rem 1.2rem; border-radius: 40px; font-weight: 600; font-size: 0.85rem; color: #0b0a0c; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(184, 134, 11, 0.2); }
+        .rain-toggle:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(184, 134, 11, 0.4); }
+        .rain-toggle.active { background: linear-gradient(145deg, #e57373, #c62828); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-card { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 1.8rem 2rem; border: 1px solid #2f2628; }
+        .form-card h3 { color: #d4af37; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.2rem; }
+        .form-group label { font-size: 0.9rem; color: #b8963c; font-weight: 500; letter-spacing: 0.5px; }
+        .form-group input, .form-group select { background: #1f181c; border: 1px solid #3a2e24; padding: 0.8rem 1rem; border-radius: 40px; color: #ece6e0; font-size: 1rem; outline: none; transition: 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2); }
+        .form-group input::placeholder { color: #5e4e4e; }
+        .form-group select option { background: #1f181c; color: #ece6e0; }
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .file-upload-btn { background: #1f181c; border: 1px dashed #b8963c; padding: 0.8rem 1rem; border-radius: 40px; color: #b8963c; text-align: center; transition: 0.2s; width: 100%; display: block; }
+        .file-upload-btn:hover { background: #2a2124; border-color: #d4af37; }
+        .avatar-preview { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+        .avatar-preview img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #b8963c; }
+        .avatar-preview span { color: #8a7e7e; font-size: 0.85rem; }
+        .btn-submit { background: linear-gradient(145deg, #d4af37, #b8860b); border: none; padding: 0.9rem 2rem; border-radius: 40px; font-weight: 700; font-size: 1rem; color: #0b0a0c; cursor: pointer; transition: 0.2s; width: 100%; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(184, 134, 11, 0.25); }
+        .btn-submit:hover { transform: scale(1.02); box-shadow: 0 12px 30px rgba(184, 134, 11, 0.4); }
+        .btn-danger { background: linear-gradient(145deg, #e57373, #c62828); box-shadow: 0 8px 20px rgba(198, 40, 40, 0.25); }
+        .btn-danger:hover { box-shadow: 0 12px 30px rgba(198, 40, 40, 0.4); }
+        .btn-secondary { background: linear-gradient(145deg, #6c5ce7, #4f46e5); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25); }
+        .btn-secondary:hover { box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); }
+        .btn-success { background: linear-gradient(145deg, #4caf50, #2e7d32); box-shadow: 0 8px 20px rgba(76, 175, 80, 0.25); }
+        .btn-success:hover { box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4); }
+        .btn-warning { background: linear-gradient(145deg, #ff9800, #e65100); box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25); }
+        .btn-warning:hover { box-shadow: 0 12px 30px rgba(255, 152, 0, 0.4); }
+        .btn-share { background: linear-gradient(145deg, #ff6b6b, #ee5a24); box-shadow: 0 8px 20px rgba(238, 90, 36, 0.25); }
+        .btn-share:hover { box-shadow: 0 12px 30px rgba(238, 90, 36, 0.4); }
+        .btn-pink { background: linear-gradient(145deg, #fd79a8, #e84393); box-shadow: 0 8px 20px rgba(232, 67, 147, 0.25); }
+        .btn-pink:hover { box-shadow: 0 12px 30px rgba(232, 67, 147, 0.4); }
+        .history-section { background: rgba(20, 16, 18, 0.7); backdrop-filter: blur(4px); border-radius: 28px; padding: 1.8rem 2rem; border: 1px solid #2f2628; margin-bottom: 2rem; }
+        .history-section h3 { color: #d4af37; margin-bottom: 1.2rem; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px dashed #2f2628; font-size: 0.95rem; }
+        .history-item:last-child { border-bottom: none; }
+        .history-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .history-date { color: #8a7e7e; font-size: 0.85rem; }
+        .history-profit-positive { color: #4caf50; }
+        .history-profit-negative { color: #e57373; }
+        .history-actions { display: flex; gap: 6px; }
+        .history-actions button { background: #1f181c; border: 1px solid #3a2e24; color: #ece6e0; padding: 0.2rem 0.6rem; border-radius: 20px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }
+        .history-actions .edit-btn:hover { border-color: #d4af37; color: #d4af37; }
+        .history-actions .delete-btn:hover { border-color: #e57373; color: #e57373; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #1a1418; border: 2px solid #b8963c; border-radius: 32px; padding: 2.5rem; max-width: 450px; width: 90%; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9); }
+        .modal-content h2 { color: #f0d78c; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .modal-content .form-group { margin-bottom: 1rem; }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .modal-actions .btn-submit { flex: 1; }
+        .modal-actions .btn-cancel { background: #2a2124; border: 1px solid #3a2e24; color: #ece6e0; padding: 0.9rem 2rem; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; }
+        .modal-actions .btn-cancel:hover { background: #3a2e24; }
+        .sync-settings { background: rgba(20, 16, 18, 0.5); border-radius: 16px; padding: 1rem 1.5rem; border: 1px solid #2f2628; margin-top: 1rem; }
+        .sync-status { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; padding: 0.4rem 0; }
+        .sync-status .online { color: #4caf50; }
+        .sync-status .offline { color: #e57373; }
+        .sync-status .syncing { color: #ffa726; }
+        .sync-status .conflict { color: #ff5722; }
+        .daily-group-date { background: rgba(184, 150, 60, 0.1); color: #f0d78c; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; display: inline-block; margin: 0.5rem 0 0.2rem 0; }
+        .daily-group-date i { margin-right: 6px; }
+        .daily-group { border-bottom: 1px solid #2a2124; padding-bottom: 0.3rem; margin-bottom: 0.3rem; }
+        .daily-group:last-child { border-bottom: none; }
+        .share-preview-area { display: none; margin-top: 1.5rem; text-align: center; background: rgba(20, 16, 18, 0.9); border-radius: 20px; padding: 1.5rem; border: 2px solid #b8963c; }
+        .share-preview-area img { max-width: 100%; max-height: 500px; border-radius: 12px; border: 2px solid #d4af37; }
+        .share-buttons { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 0.8rem; }
+        .share-buttons .btn-submit { width: auto; padding: 0.5rem 1.5rem; }
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .photo-card { background: #1f181c; border-radius: 16px; overflow: hidden; border: 1px solid #3a2e24; transition: 0.3s; }
+        .photo-card:hover { border-color: #d4af37; transform: scale(1.02); }
+        .photo-card img { width: 100%; height: 200px; object-fit: cover; }
+        .photo-card .photo-info { padding: 0.8rem; font-size: 0.85rem; color: #8a7e7e; }
+        .photo-card .photo-info .name { color: #f0d78c; font-weight: 600; }
+        .photo-card .photo-info .date { float: right; }
+        .photo-card .photo-actions { padding: 0.8rem; border-top: 1px solid #2a2124; display: flex; gap: 0.5rem; }
+        .photo-card .photo-actions button { background: #2a2124; border: none; color: #ece6e0; padding: 0.3rem 0.8rem; border-radius: 20px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }
+        .photo-card .photo-actions .delete-btn:hover { background: #e57373; color: white; }
+        .photo-card .photo-actions .download-btn:hover { background: #d4af37; color: #0b0a0c; }
+        .footer { margin-top: 2rem; text-align: center; color: #5e4e4e; border-top: 1px solid #2a2124; padding-top: 2rem; font-size: 0.9rem; }
+        .footer i { color: #b8963c; }
+        .footer .imperial { color: #d4af37; font-weight: 600; letter-spacing: 2px; }
+        @media (max-width: 600px) { .logo h1 { font-size: 2rem; } .logo .subtitle { font-size: 0.7rem; display: block; margin-left: 0; margin-top: 4px; } .rank-table th, .rank-table td { padding: 0.7rem 0.4rem; font-size: 0.85rem; } .rank-table { font-size: 0.8rem; } .rank-badge { width: 26px; height: 26px; line-height: 26px; font-size: 0.7rem; } .header { flex-direction: column; align-items: flex-start; } .chart-container { height: 200px; } .player-avatar { width: 30px; height: 30px; } .player-avatar-placeholder { width: 30px; height: 30px; font-size: 0.8rem; } .history-item { flex-direction: column; align-items: flex-start; gap: 4px; } .history-actions { width: 100%; justify-content: flex-end; } .modal-content { padding: 1.5rem; } .rank-double { gap: 1rem; } .rank-double .rank-section { padding: 1rem; } .chart-controls { margin-left: 0; width: 100%; } .chart-controls select { flex: 1; } .chart-section h3 { flex-direction: column; align-items: flex-start; } .form-grid { grid-template-columns: 1fr; } .sync-settings .form-group input { font-size: 0.8rem; } .share-buttons .btn-submit { width: 100%; } .tab-btn { font-size: 0.8rem; padding: 0.5rem 0.8rem; min-width: 60px; } .photo-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1f181c; border: 1px solid #b8963c; color: #f0d78c; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8); z-index: 999; animation: slideUp 0.4s ease; max-width: 90%; }
+        .toast-conflict { border-color: #ff5722; color: #ff5722; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+<body>
+    <div id="moneyRainContainer"></div>
+    <div class="container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <div class="logo">
+                <h1>🏯 雀界紫禁之巔 <span class="subtitle"><i class="fas fa-crown"></i> 天下雀聖 · 唯我獨尊 <i class="fas fa-crown"></i></span></h1>
+            </div>
+            <div class="header-date">
+                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: #b8963c;"></i>
+                <span id="todayDate"></span>
+            </div>
+        </div>
+
+        <!-- ===== TAB 欄 ===== -->
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="home" onclick="switchTab('home')"><i class="fas fa-home"></i> 主頁</button>
+            <button class="tab-btn" data-tab="rank" onclick="switchTab('rank')"><i class="fas fa-trophy"></i> 排行榜</button>
+            <button class="tab-btn" data-tab="photo" onclick="switchTab('photo')"><i class="fas fa-camera"></i> 相片分享</button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 1: 主頁 -->
+        <!-- ============================================================ -->
+        <div id="tab-home" class="tab-content active">
+            <!-- 紫禁龍虎榜 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-crown"></i> 紫禁龍虎榜 ｜ 累計盈虧</div>
+                <table class="rank-table">
+                    <thead><tr><th>#</th><th>雀聖</th><th>場次</th><th>累計盈虧</th><th>評級</th></tr></thead>
+                    <tbody id="rankBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 紫禁風雲榜 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-bolt"></i> 紫禁風雲榜 ｜ 單日盈虧記錄</div>
+                <div id="dailyRankBody" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- 盈虧走勢圖 -->
+            <div class="chart-section" id="chartSection">
+                <h3>
+                    <i class="fas fa-chart-line"></i> 盈虧走勢圖
+                    <div class="chart-controls">
+                        <select id="chartPlayerSelect" onchange="renderChart()"><option value="all">📊 所有玩家比較</option></select>
+                        <button class="btn-time active" data-range="all" onclick="setChartRange('all')">全部</button>
+                        <button class="btn-time" data-range="week" onclick="setChartRange('week')">📅 每週</button>
+                        <button class="btn-time" data-range="month" onclick="setChartRange('month')">📅 每月</button>
+                        <button class="rain-toggle" id="rainToggle" onclick="toggleMoneyRain()"><i class="fas fa-coins"></i> 金錢雨</button>
+                    </div>
+                </h3>
+                <div class="chart-container"><canvas id="profitChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 2: 排行榜 -->
+        <!-- ============================================================ -->
+        <div id="tab-rank" class="tab-content">
+            <!-- 一局暴富 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-rocket" style="color: #ffd700;"></i> 一局暴富 ｜ 單日贏最多</div>
+                <div id="recordWinBody"></div>
+            </div>
+            <!-- 傾家蕩產 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-skull" style="color: #e57373;"></i> 傾家蕩產 ｜ 單日輸最多</div>
+                <div id="recordLoseBody"></div>
+            </div>
+            <!-- 自摸最多 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-hand" style="color: #4ecdc4;"></i> 自摸最多 ｜ 累計自摸次數</div>
+                <div id="selfDrawBody"></div>
+            </div>
+            <!-- 出銃最多 -->
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-bomb" style="color: #ff6b6b;"></i> 出銃最多 ｜ 累計出銃次數</div>
+                <div id="dealInBody"></div>
+            </div>
+        </div>
+        <!-- ============================================================ -->
+        <!-- TAB 3: 相片分享 -->
+        <!-- ============================================================ -->
+        <div id="tab-photo" class="tab-content">
+            <div class="rank-section">
+                <div class="section-title"><i class="fas fa-camera"></i> 相片分享 ｜ 記錄雀局時刻</div>
+
+                <!-- 上傳區域 -->
+                <div class="form-card" style="margin-bottom: 1.5rem;">
+                    <h3><i class="fas fa-upload"></i> 上傳對局圖片</h3>
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> 玩家</label>
+                        <select id="photoPlayerSelect"><option value="">— 揀選玩家 —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> 對局日期</label>
+                        <input type="date" id="photoDate">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-image"></i> 揀選圖片</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn"><i class="fas fa-upload"></i> 上傳圖片</div>
+                            <input type="file" id="photoUpload" accept="image/*">
+                        </div>
+                    </div>
+                    <div id="photoPreview" style="display: none; margin-top: 1rem; text-align: center;">
+                        <img id="photoPreviewImg" src="" alt="預覽" style="max-width: 100%; max-height: 300px; border-radius: 12px; border: 2px solid #b8963c;">
+                    </div>
+                    <div style="display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button onclick="uploadPhoto()" class="btn-submit btn-pink" style="width: auto; padding: 0.6rem 2rem;"><i class="fas fa-cloud-upload-alt"></i> 上傳分享</button>
+                        <button onclick="generateSettlementImage()" class="btn-submit btn-success" style="width: auto; padding: 0.6rem 2rem;"><i class="fas fa-file-image"></i> 生成結算圖</button>
+                    </div>
+                </div>
+
+                <!-- 相片牆 -->
+                <h3 style="color: #d4af37; margin-top: 1.5rem; margin-bottom: 1rem;"><i class="fas fa-images"></i> 雀局相簿</h3>
+                <div id="photoGallery" class="photo-grid"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 表單區 -->
+        <!-- ============================================================ -->
+        <div class="form-grid">
+            <div class="form-card">
+                <h3><i class="fas fa-pen-fancy"></i> 記載戰績</h3>
+                <form id="addRecordForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> 雀聖之名</label>
+                        <select id="playerSelect" required><option value="">— 揀選玩家 —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-day"></i> 決戰之日</label>
+                        <input type="date" id="recordDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-coins"></i> 該日盈虧 (分數)</label>
+                        <input type="number" id="dailyProfit" placeholder="例如：+200 或 -150" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-hand"></i> 自摸次數</label>
+                        <input type="number" id="selfDraw" placeholder="例如：3" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-bomb"></i> 出銃次數</label>
+                        <input type="number" id="dealIn" placeholder="例如：2" value="0" min="0">
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-save"></i> 記載戰績</button>
+                </form>
+            </div>
+
+            <div class="form-card">
+                <h3><i class="fas fa-user-plus"></i> 新雀聖登錄</h3>
+                <form id="addPlayerForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> 雀聖名稱</label>
+                        <input type="text" id="newPlayerName" placeholder="例如：雀神、西門吹雪" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-image"></i> 上傳頭像</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn"><i class="fas fa-upload"></i> 揀選圖片</div>
+                            <input type="file" id="avatarUpload" accept="image/*">
+                        </div>
+                        <div class="avatar-preview" id="avatarPreview" style="display: none;">
+                            <img id="avatarPreviewImg" src="" alt="預覽">
+                            <span>已揀選頭像</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit btn-secondary"><i class="fas fa-user-plus"></i> 登錄紫禁之巔</button>
+                </form>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <h3 style="color:#d4af37;font-size:1.1rem;margin-bottom:1rem;"><i class="fas fa-edit"></i> 編輯玩家</h3>
+                <div class="form-group">
+                    <label>揀選玩家</label>
+                    <select id="editPlayerSelect2" onchange="loadPlayerForEdit()"><option value="">— 揀選玩家 —</option></select>
+                </div>
+                <div id="editPlayerArea" style="display:none;">
+                    <div class="form-group">
+                        <label>新名稱</label>
+                        <input type="text" id="editPlayerName2" placeholder="更改玩家名稱">
+                    </div>
+                    <div class="form-group">
+                        <label>更換頭像</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn" style="padding:0.5rem 1rem;font-size:0.85rem;"><i class="fas fa-upload"></i> 更換圖片</div>
+                            <input type="file" id="editAvatarUpload2" accept="image/*">
+                        </div>
+                        <div class="avatar-preview" id="editAvatarPreview2" style="display: none;">
+                            <img id="editAvatarPreviewImg2" src="" alt="預覽" style="width:40px;height:40px;">
+                            <span>新頭像</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" class="btn-submit btn-secondary" onclick="updatePlayer()" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;"><i class="fas fa-save"></i> 儲存更改</button>
+                        <button type="button" class="btn-submit btn-danger" onclick="toggleExile()" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;"><i class="fas fa-skull"></i> <span id="exileBtnText">打入冷宮</span></button>
+                    </div>
+                    <div id="exileStatus" style="margin-top:0.5rem;font-size:0.85rem;color:#e57373;"></div>
+                </div>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <!-- Firebase 同步 -->
+                <div class="sync-settings">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                        <span style="color:#b8963c;font-weight:600;font-size:0.9rem;"><i class="fas fa-fire"></i> Firebase 雲端同步</span>
+                        <span id="firebaseStatus" class="sync-status offline"><i class="fas fa-circle"></i> 未連線</span>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button id="firebaseConnectBtn" onclick="connectFirebase()" class="btn-submit btn-success" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;"><i class="fas fa-plug"></i> 連線 Firebase</button>
+                        <button id="firebaseSyncBtn" onclick="forceSync()" class="btn-submit btn-warning" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;"><i class="fas fa-cloud-upload-alt"></i> 強制覆蓋雲端</button>
+                        <button id="firebaseLoadBtn" onclick="loadFromFirebase()" class="btn-submit btn-secondary" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;"><i class="fas fa-cloud-download-alt"></i> 載入雲端數據</button>
+                        <button id="firebaseConflictBtn" onclick="resolveConflict()" class="btn-submit btn-danger" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;display:none;"><i class="fas fa-exclamation-triangle"></i> 發現衝突！點擊解決</button>
+                    </div>
+                    <div style="margin-top:0.5rem;font-size:0.75rem;color:#5e4e4e;">
+                        <i class="fas fa-info-circle"></i> ✅ 只有你主動操作（新增/編輯/刪除）先會同步<br>⚠️ 操作時會以你嘅數據覆蓋所有其他客戶端
+                    </div>
+                </div>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                    <button onclick="exportData()" class="btn-submit btn-secondary" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;"><i class="fas fa-file-export"></i> 匯出備份</button>
+                    <label class="btn-submit btn-secondary" style="padding:0.5rem 1rem;font-size:0.85rem;width:auto;cursor:pointer;display:inline-block;">
+                        <i class="fas fa-file-import"></i> 匯入備份
+                        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+                    </label>
+                </div>
+
+                <hr style="border-color: #2f2628; margin: 1.5rem 0;">
+
+                <button onclick="clearAllData()" class="btn-submit btn-danger" style="font-size: 0.9rem;"><i class="fas fa-trash"></i> 重置天下</button>
+            </div>
+        </div>
+
+        <!-- 歷史記錄 -->
+        <div class="history-section">
+            <h3><i class="fas fa-scroll"></i> 武林史冊</h3>
+            <div id="historyList"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <span class="imperial"><i class="fas fa-dragon"></i> 雀界紫禁之巔 · 以雀論英雄 <i class="fas fa-dragon"></i></span><br>
+            <span style="font-size: 0.8rem; color: #4a3e3e;">數據藏於君之器 · 天下紛爭盡在此 <i class="fas fa-dice"></i></span>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <h2><i class="fas fa-edit"></i> 編輯戰績</h2>
+            <form id="editForm">
+                <input type="hidden" id="editRecordId">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> 雀聖</label>
+                    <select id="editPlayerSelect" required><option value="">— 揀選玩家 —</option></select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> 決戰之日</label>
+                    <input type="date" id="editDate" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-coins"></i> 該日盈虧 (分數)</label>
+                    <input type="number" id="editProfit" placeholder="例如：+200 或 -150" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-hand"></i> 自摸次數</label>
+                    <input type="number" id="editSelfDraw" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-bomb"></i> 出銃次數</label>
+                    <input type="number" id="editDealIn" value="0" min="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn-submit"><i class="fas fa-save"></i> 儲存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // ================================================================
+        // 🔥 FIREBASE CONFIG
+        // ================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyABRojukbSLI2ntj1jDP5cvZ4iKe9wRoJA",
+            authDomain: "mjmj-e4a53.firebaseapp.com",
+            projectId: "mjmj-e4a53",
+            storageBucket: "mjmj-e4a53.firebasestorage.app",
+            messagingSenderId: "757677985499",
+            appId: "1:757677985499:web:6b683a1d7f35f618f746fe"
+        };
+
+        // ================================================================
+        // 變數
+        // ================================================================
+        let firebaseApp = null;
+        let firestore = null;
+        let isFirebaseConnected = false;
+        let isSyncing = false;
+        let hasConflict = false;
+        let toastTimer = null;
+        let chartRange = 'all';
+        let chartInstance = null;
+        let tempAvatar = null;
+        let tempEditAvatar = null;
+        let editingPlayerId = null;
+        let moneyRainActive = false;
+        let rainInterval = null;
+        let tempPhotoDataURL = null;
+
+        // ================================================================
+        // DATA LAYER
+        // ================================================================
+
+        function loadData() {
+            const stored = localStorage.getItem('mahjongData');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    parsed.players.forEach(p => {
+                        if (p.selfDraw === undefined) p.selfDraw = 0;
+                        if (p.dealIn === undefined) p.dealIn = 0;
+                    });
+                    parsed.records.forEach(r => {
+                        if (r.selfDraw === undefined) r.selfDraw = 0;
+                        if (r.dealIn === undefined) r.dealIn = 0;
+                    });
+                    if (!parsed.photos) parsed.photos = [];
+                    return parsed;
+                } catch (e) {
+                    return getDefaultData();
+                }
+            }
+            return getDefaultData();
+        }
+
+        function saveData(data, showToastMsg = null) {
+            data.lastUpdated = Date.now();
+            localStorage.setItem('mahjongData', JSON.stringify(data));
+            if (showToastMsg) showToast(showToastMsg);
+        }
+
+        function getDefaultData() {
+            return {
+                players: [
+                    { id: 1, name: '龍爺', avatar: '', exiled: false, updatedAt: Date.now(), selfDraw: 0, dealIn: 0 },
+                    { id: 2, name: '虎妹', avatar: '', exiled: false, updatedAt: Date.now(), selfDraw: 0, dealIn: 0 },
+                    { id: 3, name: '雀后', avatar: '', exiled: false, updatedAt: Date.now(), selfDraw: 0, dealIn: 0 },
+                    { id: 4, name: '暗槓', avatar: '', exiled: false, updatedAt: Date.now(), selfDraw: 0, dealIn: 0 },
+                ],
+                records: [
+                    { id: 1, playerId: 1, date: '2026-07-31', profit: 200, selfDraw: 2, dealIn: 1, updatedAt: Date.now() },
+                    { id: 2, playerId: 1, date: '2026-07-30', profit: -50, selfDraw: 0, dealIn: 3, updatedAt: Date.now() },
+                    { id: 3, playerId: 2, date: '2026-07-31', profit: 150, selfDraw: 3, dealIn: 0, updatedAt: Date.now() },
+                    { id: 4, playerId: 3, date: '2026-07-31', profit: -100, selfDraw: 0, dealIn: 2, updatedAt: Date.now() },
+                    { id: 5, playerId: 4, date: '2026-07-31', profit: 80, selfDraw: 1, dealIn: 1, updatedAt: Date.now() },
+                ],
+                nextPlayerId: 5,
+                nextRecordId: 6,
+                lastUpdated: Date.now(),
+                photos: []
+            };
+        }
+
+        let data = loadData();
+
+        const CHART_COLORS = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#FF8A5C','#A29BFE','#FD79A8','#00B894','#FDCB6E','#6C5CE7','#00CEC9','#E17055','#74B9FF'];
+        function getPlayerColor(idx) { return CHART_COLORS[idx % CHART_COLORS.length]; }
+
+        // ================================================================
+        // TAB 切換
+        // ================================================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector('.tab-btn[data-tab="' + tabName + '"]').classList.add('active');
+            if (tabName === 'photo') renderPhotoGallery();
+            if (tabName === 'rank') {
+                renderRecordRanking();
+                renderSelfDrawRanking();
+                renderDealInRanking();
+            }
+        }
+
+        // ================================================================
+        // HELPER FUNCTIONS
+        // ================================================================
+        function getPlayerName(id) { const p = data.players.find(p => p.id === id); return p ? p.name : '未知'; }
+        function getPlayerAvatar(id) { const p = data.players.find(p => p.id === id); return p && p.avatar ? p.avatar : null; }
+        function getPlayerRecords(playerId) { return data.records.filter(r => r.playerId === playerId).sort((a, b) => a.date.localeCompare(b.date)); }
+        function getTotalProfit(playerId) { return getPlayerRecords(playerId).reduce((sum, r) => sum + r.profit, 0); }
+        function getPlayerGames(playerId) { return getPlayerRecords(playerId).length; }
+        function getTotalSelfDraw(playerId) { return getPlayerRecords(playerId).reduce((sum, r) => sum + (r.selfDraw || 0), 0); }
+        function getTotalDealIn(playerId) { return getPlayerRecords(playerId).reduce((sum, r) => sum + (r.dealIn || 0), 0); }
+        function getPlayerProfitHistory(playerId) {
+            const records = getPlayerRecords(playerId);
+            let cumulative = 0;
+            return records.map(r => { cumulative += r.profit; return { date: r.date, cumulative: cumulative }; });
+        }
+        function getAllDates() { const dates = new Set(); data.records.forEach(r => dates.add(r.date)); return Array.from(dates).sort(); }
+        function getRating(profit) {
+            if (profit >= 2000) return { label: '👑 皇上', class: 'rank-emperor' };
+            if (profit >= 1000) return { label: '🤴 親王', class: 'rank-king' };
+            if (profit >= 500) return { label: '🛡️ 公爵', class: 'rank-duke' };
+            if (profit >= 200) return { label: '⚔️ 伯爵', class: 'rank-earl' };
+            if (profit >= 0) return { label: '🐴 騎士', class: 'rank-knight' };
+            if (profit >= -300) return { label: '🛠️ 隨從', class: 'rank-squire' };
+            if (profit >= -800) return { label: '🌾 平民', class: 'rank-peasant' };
+            return { label: '❄️ 冷宮', class: 'rank-exile' };
+        }
+
+        function getAvatarHtml(player, index) {
+            if (player.avatar) {
+                return `<img class="player-avatar" src="${player.avatar}" alt="${player.name}" style="width:30px;height:30px;">`;
+            } else {
+                const icons = ['fa-dragon','fa-tiger','fa-chess-queen','fa-user-ninja','fa-hat-wizard','fa-hand-sparkles','fa-crown','fa-star','fa-feather','fa-bolt'];
+                const icon = icons[index % icons.length];
+                return `<div class="player-avatar-placeholder" style="width:30px;height:30px;font-size:0.9rem;"><i class="fas ${icon}"></i></div>`;
+            }
+        }
+
+        function getAvatarHtmlById(playerId, index) {
+            const player = data.players.find(p => p.id === playerId);
+            if (!player) return `<div class="player-avatar-placeholder" style="width:30px;height:30px;font-size:0.9rem;"><i class="fas fa-user"></i></div>`;
+            return getAvatarHtml(player, index);
+        }
+
+        // ================================================================
+        // 🔥 FIREBASE FUNCTIONS
+        // ================================================================
+        function initFirebase() {
+            try {
+                if (firebaseApp) return;
+                console.log('🔄 初始化 Firebase...');
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                firestore = firebase.firestore(firebaseApp);
+                firestore.enableNetwork().then(() => console.log('✅ Firebase 網絡已啟用'));
+                console.log('✅ Firebase 初始化成功');
+            } catch (error) {
+                console.error('❌ Firebase 初始化失敗:', error);
+            }
+        }
+
+        function updateFirebaseStatus(status) {
+            const el = document.getElementById('firebaseStatus');
+            if (status === 'online') { el.className = 'sync-status online'; el.innerHTML = '<i class="fas fa-circle"></i> 已連線 ✅'; }
+            else if (status === 'syncing') { el.className = 'sync-status syncing'; el.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...'; }
+            else if (status === 'conflict') { el.className = 'sync-status conflict'; el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 有衝突！'; }
+            else { el.className = 'sync-status offline'; el.innerHTML = '<i class="fas fa-circle"></i> 未連線 ❌'; }
+        }
+
+        async function connectFirebase() {
+            console.log('🔄 開始連線 Firebase...');
+            if (!firebaseApp) initFirebase();
+            if (!firestore) { try { firestore = firebase.firestore(firebaseApp); } catch(e) { showToast('❌ Firestore 初始化失敗'); return; } }
+            try {
+                showToast('⏳ 正在連線 Firebase...');
+                updateFirebaseStatus('syncing');
+                await firestore.collection('test').doc('test').set({ message: '連線測試', time: Date.now() });
+                const testDoc = await firestore.collection('test').doc('test').get();
+                console.log('✅ 測試讀取成功:', testDoc.data());
+                isFirebaseConnected = true;
+                updateFirebaseStatus('online');
+                document.getElementById('firebaseConnectBtn').style.display = 'none';
+                document.getElementById('firebaseSyncBtn').style.display = 'inline-block';
+                document.getElementById('firebaseLoadBtn').style.display = 'inline-block';
+                showToast('✅ Firebase 連線成功！');
+                listenForUpdates();
+                await loadFromFirebase();
+            } catch (error) {
+                console.error('❌ Firebase 連線失敗:', error);
+                showToast('❌ Firebase 連線失敗: ' + error.message);
+                updateFirebaseStatus('offline');
+                isFirebaseConnected = false;
+            }
+        }
+
+        async function syncToFirebase(showToastMsg = '✅ 數據已同步（覆蓋雲端）') {
+            if (!isFirebaseConnected || !firestore) { showToast('⚠️ 請先連線 Firebase'); return false; }
+            if (isSyncing) { console.log('⏭️ 同步進行中，跳過'); return false; }
+            try {
+                isSyncing = true;
+                updateFirebaseStatus('syncing');
+                console.log('📤 開始強制覆蓋同步...');
+                const uploadData = {
+                    players: data.players,
+                    records: data.records,
+                    photos: data.photos || [],
+                    nextPlayerId: data.nextPlayerId,
+                    nextRecordId: data.nextRecordId,
+                    lastUpdated: Date.now()
+                };
+                await firestore.collection('mahjong').doc('data').set(uploadData);
+                data.lastUpdated = uploadData.lastUpdated;
+                localStorage.setItem('mahjongData', JSON.stringify(data));
+                updateFirebaseStatus('online');
+                hasConflict = false;
+                document.getElementById('firebaseConflictBtn').style.display = 'none';
+                console.log('✅ 強制覆蓋同步成功！');
+                showToast(showToastMsg);
+                return true;
+            } catch (error) {
+                console.error('❌ 同步失敗:', error);
+                showToast('❌ 同步失敗：' + error.message);
+                updateFirebaseStatus('offline');
+                return false;
+            } finally { isSyncing = false; }
+        }
+
+        async function forceSync() {
+            if (confirm('⚠️ 確定要用你嘅數據覆蓋雲端？其他裝置嘅數據將會被取代！')) {
+                await syncToFirebase('✅ 已強制覆蓋雲端數據！');
+            }
+        }
+
+        async function loadFromFirebase() {
+            if (!isFirebaseConnected || !firestore) { showToast('⚠️ 請先連線 Firebase'); return; }
+            try {
+                updateFirebaseStatus('syncing');
+                showToast('⏳ 正在載入雲端數據...');
+                const doc = await firestore.collection('mahjong').doc('data').get();
+                if (doc.exists) {
+                    const remoteData = doc.data();
+                    const localTime = data.lastUpdated || 0;
+                    const remoteTime = remoteData.lastUpdated || 0;
+                    if (remoteTime > localTime) {
+                        showToast('⚠️ 雲端數據較新，請按「載入雲端數據」更新');
+                        updateFirebaseStatus('conflict');
+                        hasConflict = true;
+                        document.getElementById('firebaseConflictBtn').style.display = 'inline-block';
+                    } else {
+                        showToast('📌 本地數據較新，請按「強制覆蓋雲端」上傳');
+                        updateFirebaseStatus('online');
+                    }
+                } else {
+                    showToast('📁 雲端無數據，請上傳本地數據');
+                }
+            } catch (error) {
+                console.error('❌ 載入失敗:', error);
+                showToast('❌ 載入失敗：' + error.message);
+                updateFirebaseStatus('offline');
+            }
+        }
+
+        async function resolveConflict() {
+            if (!confirm('⚠️ 確定要載入雲端數據？你嘅本地修改將會被取代！')) return;
+            try {
+                updateFirebaseStatus('syncing');
+                showToast('⏳ 正在載入雲端數據...');
+                const doc = await firestore.collection('mahjong').doc('data').get();
+                if (doc.exists) {
+                    const remoteData = doc.data();
+                    data.players = remoteData.players || [];
+                    data.records = remoteData.records || [];
+                    data.photos = remoteData.photos || [];
+                    data.nextPlayerId = remoteData.nextPlayerId || 1;
+                    data.nextRecordId = remoteData.nextRecordId || 1;
+                    data.lastUpdated = remoteData.lastUpdated || Date.now();
+                    localStorage.setItem('mahjongData', JSON.stringify(data));
+                    renderAll();
+                    hasConflict = false;
+                    document.getElementById('firebaseConflictBtn').style.display = 'none';
+                    updateFirebaseStatus('online');
+                    showToast('✅ 已載入雲端數據！');
+                }
+            } catch (error) {
+                console.error('❌ 載入失敗:', error);
+                showToast('❌ 載入失敗：' + error.message);
+            }
+        }
+
+        function listenForUpdates() {
+            if (!isFirebaseConnected || !firestore) return;
+            console.log('📡 開始監聽 Firebase 變化...');
+            firestore.collection('mahjong').doc('data').onSnapshot((doc) => {
+                if (doc.exists && !isSyncing) {
+                    const remoteData = doc.data();
+                    const localTime = data.lastUpdated || 0;
+                    const remoteTime = remoteData.lastUpdated || 0;
+                    if (remoteTime === localTime) return;
+                    console.log('📡 檢測到其他裝置更新');
+                    hasConflict = true;
+                    document.getElementById('firebaseConflictBtn').style.display = 'inline-block';
+                    updateFirebaseStatus('conflict');
+                    showToast('⚠️ 有其他裝置更新咗數據！點擊「發現衝突」載入');
+                }
+            }, (error) => console.error('❌ 監聽失敗:', error));
+        }
+        // ================================================================
+        // RENDER FUNCTIONS
+        // ================================================================
+
+        function renderRanking() {
+            const tbody = document.getElementById('rankBody');
+            const sorted = [...data.players].map(p => ({ ...p, totalProfit: getTotalProfit(p.id), games: getPlayerGames(p.id) })).sort((a, b) => b.totalProfit - a.totalProfit);
+            tbody.innerHTML = '';
+            sorted.forEach((p, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                if (rank === 1) rankClass = 'rank-1';
+                else if (rank === 2) rankClass = 'rank-2';
+                else if (rank === 3) rankClass = 'rank-3';
+                const profitClass = p.totalProfit >= 0 ? 'profit-positive' : 'profit-negative';
+                const profitSymbol = p.totalProfit >= 0 ? '+' : '';
+                const rating = getRating(p.totalProfit);
+                const avatarHtml = getAvatarHtml(p, index);
+                const exiledMark = p.exiled ? ' 🚫' : '';
+                tbody.innerHTML += `<tr><td><span class="rank-badge ${rankClass}">${rank}</span></td><td class="player-name">${avatarHtml} ${p.name}${exiledMark}</td><td>${p.games}</td><td class="profit ${profitClass}">${profitSymbol}${p.totalProfit.toLocaleString()}</td><td><span class="rank-badge-large ${rating.class}">${rating.label}</span></td></tr>`;
+            });
+        }
+
+        function renderDailyRanking() {
+            const container = document.getElementById('dailyRankBody');
+            const allDates = getAllDates().reverse();
+            if (allDates.length === 0) { container.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有記錄</p>'; return; }
+            let html = '';
+            allDates.forEach(date => {
+                const dayRecords = data.records.filter(r => r.date === date);
+                const dayTotal = dayRecords.reduce((sum, r) => sum + r.profit, 0);
+                const totalSymbol = dayTotal >= 0 ? '+' : '';
+                html += `<div class="daily-group"><div class="daily-group-date"><i class="fas fa-calendar-day"></i> ${date}<span style="margin-left:12px;font-weight:700;color:${dayTotal >= 0 ? '#4caf50' : '#e57373'}">全日總和：${totalSymbol}${dayTotal}</span></div>`;
+                const sortedRecords = [...dayRecords].sort((a, b) => b.profit - a.profit);
+                sortedRecords.forEach((r, idx) => {
+                    const profitClass = r.profit >= 0 ? 'profit-positive' : 'profit-negative';
+                    const symbol = r.profit >= 0 ? '+' : '';
+                    const icon = r.profit >= 0 ? '🏆' : '💀';
+                    const rank = idx + 1;
+                    const player = data.players.find(p => p.id === r.playerId);
+                    const avatarHtml = player ? getAvatarHtml(player, idx) : '';
+                    html += `<div class="history-item" style="padding:0.4rem 0.4rem 0.4rem 0.8rem;font-size:0.9rem;"><div class="history-info"><span style="font-weight:600;color:${rank === 1 && r.profit > 0 ? '#f7d875' : rank === 1 && r.profit < 0 ? '#e57373' : '#ece6e0'}">#${rank}</span>${avatarHtml}<span>${getPlayerName(r.playerId)}</span><span class="${profitClass}" style="font-weight:700;">${symbol}${r.profit}</span>${r.profit >= 50 ? ' 🔥' : ''}${r.profit <= -50 ? ' ❄️' : ''}${r.selfDraw > 0 ? ` 🤚${r.selfDraw}` : ''}${r.dealIn > 0 ? ` 💣${r.dealIn}` : ''}</div><div style="font-size:0.75rem;color:#5e4e4e;">${icon}</div></div>`;
+                });
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderRecordRanking() {
+            const winContainer = document.getElementById('recordWinBody');
+            const loseContainer = document.getElementById('recordLoseBody');
+            const allRecords = [...data.records];
+            if (allRecords.length === 0) {
+                winContainer.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有記錄</p>';
+                loseContainer.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有記錄</p>';
+                return;
+            }
+            const winRecords = allRecords.filter(r => r.profit > 0).sort((a, b) => b.profit - a.profit);
+            const loseRecords = allRecords.filter(r => r.profit < 0).sort((a, b) => a.profit - b.profit);
+            winContainer.innerHTML = renderRecordTable(winRecords.slice(0, 10), 'profit-record', '+');
+            loseContainer.innerHTML = renderRecordTable(loseRecords.slice(0, 10), 'profit-negative', '');
+        }
+
+        function renderRecordTable(records, className, symbol) {
+            if (records.length === 0) return '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">未有記錄</p>';
+            let html = `<table class="rank-table"><thead><tr><th>#</th><th>雀聖</th><th>日期</th><th>盈利</th><th>🏆</th></tr></thead><tbody>`;
+            records.forEach((r, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                if (rank === 1) rankClass = 'rank-gold';
+                else if (rank === 2) rankClass = 'rank-silver';
+                else if (rank === 3) rankClass = 'rank-bronze';
+                const avatarHtml = getAvatarHtmlById(r.playerId, index);
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+                html += `<tr><td><span class="rank-badge ${rankClass}">${rank}</span></td><td class="player-name">${avatarHtml} ${getPlayerName(r.playerId)}</td><td>${r.date}</td><td class="profit ${className}">${symbol}${r.profit}</td><td>${medal}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function renderSelfDrawRanking() {
+            const container = document.getElementById('selfDrawBody');
+            const sorted = [...data.players].filter(p => !p.exiled).map(p => ({ ...p, totalSelfDraw: getTotalSelfDraw(p.id) })).sort((a, b) => b.totalSelfDraw - a.totalSelfDraw).filter(p => p.totalSelfDraw > 0);
+            if (sorted.length === 0) { container.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有自摸記錄</p>'; return; }
+            let html = `<table class="rank-table"><thead><tr><th>#</th><th>雀聖</th><th>自摸次數</th><th>🏆</th></tr></thead><tbody>`;
+            sorted.forEach((p, index) => {
+                const rank = index + 1;
+                let rankClass = rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : rank === 3 ? 'rank-bronze' : '';
+                const avatarHtml = getAvatarHtml(p, index);
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+                html += `<tr><td><span class="rank-badge ${rankClass}">${rank}</span></td><td class="player-name">${avatarHtml} ${p.name}</td><td class="profit profit-record">${p.totalSelfDraw}</td><td>${medal}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function renderDealInRanking() {
+            const container = document.getElementById('dealInBody');
+            const sorted = [...data.players].filter(p => !p.exiled).map(p => ({ ...p, totalDealIn: getTotalDealIn(p.id) })).sort((a, b) => b.totalDealIn - a.totalDealIn).filter(p => p.totalDealIn > 0);
+            if (sorted.length === 0) { container.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 1rem;">尚未有出銃記錄</p>'; return; }
+            let html = `<table class="rank-table"><thead><tr><th>#</th><th>雀聖</th><th>出銃次數</th><th>🏆</th></tr></thead><tbody>`;
+            sorted.forEach((p, index) => {
+                const rank = index + 1;
+                let rankClass = rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : rank === 3 ? 'rank-bronze' : '';
+                const avatarHtml = getAvatarHtml(p, index);
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+                html += `<tr><td><span class="rank-badge ${rankClass}">${rank}</span></td><td class="player-name">${avatarHtml} ${p.name}</td><td class="profit profit-negative">${p.totalDealIn}</td><td>${medal}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // ================================================================
+        // 📸 相片分享功能
+        // ================================================================
+
+        document.getElementById('photoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempPhotoDataURL = event.target.result;
+                document.getElementById('photoPreviewImg').src = tempPhotoDataURL;
+                document.getElementById('photoPreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function uploadPhoto() {
+            const playerId = parseInt(document.getElementById('photoPlayerSelect').value);
+            const date = document.getElementById('photoDate').value;
+            if (!playerId) { showToast('⚠️ 請揀選玩家'); return; }
+            if (!date) { showToast('⚠️ 請揀選日期'); return; }
+            if (!tempPhotoDataURL) { showToast('⚠️ 請上傳圖片'); return; }
+            const photo = { id: Date.now(), playerId: playerId, date: date, image: tempPhotoDataURL, uploadedAt: Date.now() };
+            if (!data.photos) data.photos = [];
+            data.photos.push(photo);
+            saveData(data, '📸 圖片已上傳分享！');
+            renderPhotoGallery();
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('photoUpload').value = '';
+            tempPhotoDataURL = null;
+            if (isFirebaseConnected) syncToFirebase('📸 圖片已同步到雲端');
+        }
+
+        function renderPhotoGallery() {
+            const container = document.getElementById('photoGallery');
+            if (!data.photos || data.photos.length === 0) {
+                container.innerHTML = '<p style="color: #5e4e4e; text-align: center; padding: 2rem;">尚未有相片，快啲上傳啦！📸</p>';
+                return;
+            }
+            const sorted = [...data.photos].reverse();
+            let html = '';
+            sorted.forEach(photo => {
+                const playerName = getPlayerName(photo.playerId);
+                html += `<div class="photo-card"><img src="${photo.image}" alt="雀局相片" loading="lazy"><div class="photo-info"><span class="name">${playerName}</span><span class="date">${photo.date}</span></div><div class="photo-actions"><button onclick="deletePhoto(${photo.id})" class="delete-btn"><i class="fas fa-trash"></i> 刪除</button><button onclick="downloadPhoto(${photo.id})" class="download-btn"><i class="fas fa-download"></i> 下載</button></div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function deletePhoto(photoId) {
+            if (!confirm('⚠️ 確定要刪除呢張相片？')) return;
+            data.photos = data.photos.filter(p => p.id !== photoId);
+            saveData(data, '🗑️ 相片已刪除');
+            renderPhotoGallery();
+            if (isFirebaseConnected) syncToFirebase('🗑️ 相片已從雲端刪除');
+        }
+
+        function downloadPhoto(photoId) {
+            const photo = data.photos.find(p => p.id === photoId);
+            if (!photo) return;
+            const link = document.createElement('a');
+            link.download = `雀局_${getPlayerName(photo.playerId)}_${photo.date}.png`;
+            link.href = photo.image;
+            link.click();
+            showToast('📥 圖片已下載！');
+        }
+
+        function generateSettlementImage() {
+            const playerId = parseInt(document.getElementById('photoPlayerSelect').value);
+            const date = document.getElementById('photoDate').value;
+            if (!playerId) { showToast('⚠️ 請揀選玩家'); return; }
+            if (!date) { showToast('⚠️ 請揀選日期'); return; }
+            const record = data.records.find(r => r.playerId === playerId && r.date === date);
+            const player = data.players.find(p => p.id === playerId);
+            if (!record) { showToast('⚠️ 未找到該日記錄，請先記載戰績'); return; }
+            const canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, '#0b0a0c');
+            gradient.addColorStop(0.5, '#1a1418');
+            gradient.addColorStop(1, '#0b0a0c');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 600, 400);
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 20, 560, 360);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = 'bold 28px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = '#f0d78c';
+            ctx.fillText('🏯 雀界紫禁之巔', 300, 35);
+            ctx.font = '16px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = '#b8963c';
+            ctx.fillText('— 對局結算 —', 300, 75);
+            ctx.strokeStyle = '#3a2e24';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(60, 100);
+            ctx.lineTo(540, 100);
+            ctx.stroke();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.font = '20px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = '#f0d78c';
+            ctx.fillText(`👤 玩家：${player ? player.name : '未知'}`, 50, 115);
+            ctx.fillStyle = '#8a7e7e';
+            ctx.font = '16px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillText(`📅 日期：${date}`, 50, 150);
+            const profitColor = record.profit >= 0 ? '#4caf50' : '#e57373';
+            const profitSymbol = record.profit >= 0 ? '+' : '';
+            ctx.font = 'bold 24px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = profitColor;
+            ctx.textAlign = 'center';
+            ctx.fillText(`💰 盈虧：${profitSymbol}${record.profit} 分`, 300, 195);
+            ctx.textAlign = 'left';
+            ctx.font = '18px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillText(`🤚 自摸：${record.selfDraw || 0} 次`, 120, 250);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillText(`💣 出銃：${record.dealIn || 0} 次`, 320, 250);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '12px "Segoe UI", "PingFang HK", sans-serif';
+            ctx.fillStyle = '#5e4e4e';
+            ctx.fillText('雀界紫禁之巔 · 以雀論英雄', 300, 375);
+            const dataURL = canvas.toDataURL('image/png');
+            document.getElementById('photoPreviewImg').src = dataURL;
+            document.getElementById('photoPreview').style.display = 'block';
+            tempPhotoDataURL = dataURL;
+            showToast('✅ 結算圖已生成！點擊「上傳分享」儲存');
+        }
+
+        // ================================================================
+        // 圖表功能
+        // ================================================================
+
+        function setChartRange(range) {
+            chartRange = range;
+            document.querySelectorAll('.btn-time').forEach(btn => { btn.classList.toggle('active', btn.dataset.range === range); });
+            renderChart();
+        }
+
+        function getFilteredDates(allDates) {
+            if (chartRange === 'all') return allDates;
+            const now = new Date();
+            return allDates.filter(date => {
+                const d = new Date(date);
+                if (chartRange === 'week') { const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7); return d >= weekAgo; }
+                if (chartRange === 'month') { const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1); return d >= monthAgo; }
+                return true;
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            const selected = document.getElementById('chartPlayerSelect').value;
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            if (data.records.length === 0 || data.players.length === 0) return;
+            let allDates = getAllDates();
+            allDates = getFilteredDates(allDates);
+            if (allDates.length === 0) return;
+            let datasets = [];
+            const activePlayers = data.players.filter(p => !p.exiled);
+            if (selected === 'all') {
+                activePlayers.forEach((player, idx) => {
+                    const history = getPlayerProfitHistory(player.id);
+                    if (history.length === 0) return;
+                    const profitMap = {};
+                    history.forEach(h => { profitMap[h.date] = h.cumulative; });
+                    const dataPoints = allDates.map(date => profitMap[date] || null);
+                    if (dataPoints.some(d => d !== null)) {
+                        datasets.push({ label: player.name, data: dataPoints, borderColor: getPlayerColor(idx), backgroundColor: getPlayerColor(idx) + '33', borderWidth: 3, pointBackgroundColor: getPlayerColor(idx), pointRadius: 4, tension: 0.3, fill: true, spanGaps: true });
+                    }
+                });
+                if (datasets.length === 0) return;
+            } else {
+                const playerId = parseInt(selected);
+                const player = data.players.find(p => p.id === playerId);
+                if (!player) return;
+                const history = getPlayerProfitHistory(playerId);
+                if (history.length === 0) return;
+                const idx = data.players.indexOf(player);
+                datasets = [{ label: player.name, data: history.map(h => h.cumulative), borderColor: getPlayerColor(idx), backgroundColor: getPlayerColor(idx) + '33', borderWidth: 3, pointBackgroundColor: getPlayerColor(idx), pointBorderColor: '#b8860b', pointRadius: 5, tension: 0.3, fill: true }];
+            }
+            chartInstance = new Chart(ctx, { type: 'line', data: { labels: allDates, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#ece6e0', font: { size: 12, weight: 'bold' } } } }, scales: { x: { ticks: { color: '#8a7e7e', maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#8a7e7e' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+        }
+
+        // ================================================================
+        // RENDER ALL
+        // ================================================================
+
+        function renderAll() {
+            renderRanking();
+            renderDailyRanking();
+            renderRecordRanking();
+            renderSelfDrawRanking();
+            renderDealInRanking();
+            renderPlayerSelect();
+            renderHistory();
+            renderChart();
+            renderPhotoGallery();
+            updateDate();
+            updateExileStatus();
+        }
+
+        function renderPlayerSelect() {
+            const selects = ['playerSelect', 'editPlayerSelect', 'editPlayerSelect2', 'photoPlayerSelect'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">— 揀選玩家 —</option>';
+                data.players.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name + (p.exiled ? ' 🚫' : '');
+                    select.appendChild(option);
+                });
+                if (currentValue && data.players.some(p => p.id == currentValue)) select.value = currentValue;
+            });
+            const chartSelect = document.getElementById('chartPlayerSelect');
+            const chartValue = chartSelect.value;
+            chartSelect.innerHTML = '<option value="all">📊 所有玩家比較</option>';
+            data.players.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = `👤 ${p.name}` + (p.exiled ? ' 🚫' : '');
+                chartSelect.appendChild(option);
+            });
+            if (chartValue && data.players.some(p => p.id == chartValue)) chartSelect.value = chartValue;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            const sorted = [...data.records].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+            container.innerHTML = '';
+            if (sorted.length === 0) { container.innerHTML = '<p style="color: #5e4e4e; text-align: center;">武林史冊尚未有記載...</p>'; return; }
+            sorted.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                const profitClass = r.profit >= 0 ? 'history-profit-positive' : 'history-profit-negative';
+                const symbol = r.profit >= 0 ? '+' : '';
+                div.innerHTML = `<div class="history-info"><span><strong>${getPlayerName(r.playerId)}</strong></span><span class="${profitClass}">${symbol}${r.profit}</span>${r.selfDraw > 0 ? `<span style="color:#4ecdc4;">🤚${r.selfDraw}</span>` : ''}${r.dealIn > 0 ? `<span style="color:#ff6b6b;">💣${r.dealIn}</span>` : ''}<span class="history-date">${r.date}</span></div><div class="history-actions"><button class="edit-btn" onclick="openEditModal(${r.id})"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRecord(${r.id})"><i class="fas fa-trash"></i></button></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function updateDate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            document.getElementById('todayDate').textContent = `${y}-${m}-${d} ｜ 第 ${Math.ceil(now.getDate()/7)} 週`;
+            if (!document.getElementById('recordDate').value) document.getElementById('recordDate').value = `${y}-${m}-${d}`;
+            if (!document.getElementById('photoDate').value) document.getElementById('photoDate').value = `${y}-${m}-${d}`;
+        }
+
+        function updateExileStatus() {
+            const statusDiv = document.getElementById('exileStatus');
+            if (editingPlayerId) {
+                const player = data.players.find(p => p.id === editingPlayerId);
+                if (player) {
+                    statusDiv.textContent = player.exiled ? '🚫 此雀聖已被打入冷宮' : '✅ 此雀聖仍在朝中';
+                    document.getElementById('exileBtnText').textContent = player.exiled ? '召回返朝' : '打入冷宮';
+                }
+            }
+        }
+
+        // ================================================================
+        // EDIT PLAYER FUNCTIONS
+        // ================================================================
+
+        function loadPlayerForEdit() {
+            const select = document.getElementById('editPlayerSelect2');
+            const id = parseInt(select.value);
+            if (!id) { document.getElementById('editPlayerArea').style.display = 'none'; editingPlayerId = null; return; }
+            const player = data.players.find(p => p.id === id);
+            if (!player) return;
+            editingPlayerId = id;
+            document.getElementById('editPlayerArea').style.display = 'block';
+            document.getElementById('editPlayerName2').value = player.name;
+            document.getElementById('editAvatarPreview2').style.display = 'none';
+            document.getElementById('editAvatarUpload2').value = '';
+            tempEditAvatar = null;
+            updateExileStatus();
+        }
+
+        document.getElementById('editAvatarUpload2').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempEditAvatar = event.target.result;
+                document.getElementById('editAvatarPreviewImg2').src = tempEditAvatar;
+                document.getElementById('editAvatarPreview2').style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function updatePlayer() {
+            if (!editingPlayerId) { showToast('⚠️ 請先揀選玩家'); return; }
+            const player = data.players.find(p => p.id === editingPlayerId);
+            if (!player) return;
+            const newName = document.getElementById('editPlayerName2').value.trim();
+            if (newName && newName !== player.name) {
+                if (data.players.some(p => p.name === newName && p.id !== editingPlayerId)) { showToast('⚠️ 名稱已被使用'); return; }
+                player.name = newName;
+            }
+            if (tempEditAvatar) { player.avatar = tempEditAvatar; tempEditAvatar = null; document.getElementById('editAvatarPreview2').style.display = 'none'; }
+            player.updatedAt = Date.now();
+            saveData(data, `✅ 已更新 ${player.name} 嘅資料`);
+            renderAll();
+            if (isFirebaseConnected) syncToFirebase(`📤 ${player.name} 嘅資料已同步到雲端`);
+        }
+
+        function toggleExile() {
+            if (!editingPlayerId) { showToast('⚠️ 請先揀選玩家'); return; }
+            const player = data.players.find(p => p.id === editingPlayerId);
+            if (!player) return;
+            player.exiled = !player.exiled;
+            player.updatedAt = Date.now();
+            const msg = player.exiled ? `❄️ ${player.name} 已被打入冷宮` : `👑 ${player.name} 已召回返朝`;
+            saveData(data, msg);
+            renderAll();
+            updateExileStatus();
+            if (isFirebaseConnected) syncToFirebase(`📤 ${player.name} 嘅狀態已同步到雲端`);
+        }
+
+        document.getElementById('avatarUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempAvatar = event.target.result;
+                document.getElementById('avatarPreviewImg').src = tempAvatar;
+                document.getElementById('avatarPreview').style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // ================================================================
+        // ACTION FUNCTIONS
+        // ================================================================
+
+        document.getElementById('addPlayerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('newPlayerName').value.trim();
+            if (!name) { showToast('⚠️ 請輸入雀聖之名'); return; }
+            if (data.players.some(p => p.name === name)) { showToast('⚠️ 此雀聖已登錄紫禁之巔'); return; }
+            const newPlayer = { id: data.nextPlayerId++, name: name, avatar: tempAvatar || '', exiled: false, updatedAt: Date.now(), selfDraw: 0, dealIn: 0 };
+            data.players.push(newPlayer);
+            saveData(data, `🏯 歡迎 ${name} 登錄紫禁之巔！`);
+            renderAll();
+            document.getElementById('newPlayerName').value = '';
+            tempAvatar = null;
+            document.getElementById('avatarPreview').style.display = 'none';
+            document.getElementById('avatarPreviewImg').src = '';
+            document.getElementById('avatarUpload').value = '';
+            if (isFirebaseConnected) syncToFirebase(`📤 ${name} 已同步到雲端`);
+        });
+
+        document.getElementById('addRecordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const playerId = parseInt(document.getElementById('playerSelect').value);
+            const date = document.getElementById('recordDate').value;
+            const profit = parseInt(document.getElementById('dailyProfit').value);
+            const selfDraw = parseInt(document.getElementById('selfDraw').value) || 0;
+            const dealIn = parseInt(document.getElementById('dealIn').value) || 0;
+            if (!playerId) { showToast('⚠️ 請揀選雀聖'); return; }
+            if (!date) { showToast('⚠️ 請揀選決戰之日'); return; }
+            if (isNaN(profit)) { showToast('⚠️ 請輸入有效嘅盈虧數字'); return; }
+            const player = data.players.find(p => p.id === playerId);
+            if (player) { player.selfDraw = (player.selfDraw || 0) + selfDraw; player.dealIn = (player.dealIn || 0) + dealIn; }
+            const newRecord = { id: data.nextRecordId++, playerId: playerId, date: date, profit: profit, selfDraw: selfDraw, dealIn: dealIn, updatedAt: Date.now() };
+            data.records.push(newRecord);
+            const msg = `⚔️ 已記載 ${getPlayerName(playerId)} 嘅戰績：${profit >= 0 ? '+' : ''}${profit}`;
+            saveData(data, msg);
+            document.getElementById('dailyProfit').value = '';
+            document.getElementById('selfDraw').value = '0';
+            document.getElementById('dealIn').value = '0';
+            renderAll();
+            if (profit > 0) triggerMoneyRain(3);
+            if (isFirebaseConnected) syncToFirebase(`📤 ${getPlayerName(playerId)} 嘅戰績已同步到雲端`);
+        });
+
+        // ================================================================
+        // EDIT & DELETE RECORDS
+        // ================================================================
+
+        function openEditModal(recordId) {
+            const record = data.records.find(r => r.id === recordId);
+            if (!record) return;
+            document.getElementById('editRecordId').value = recordId;
+            document.getElementById('editPlayerSelect').value = record.playerId;
+            document.getElementById('editDate').value = record.date;
+            document.getElementById('editProfit').value = record.profit;
+            document.getElementById('editSelfDraw').value = record.selfDraw || 0;
+            document.getElementById('editDealIn').value = record.dealIn || 0;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
+
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const recordId = parseInt(document.getElementById('editRecordId').value);
+            const playerId = parseInt(document.getElementById('editPlayerSelect').value);
+            const date = document.getElementById('editDate').value;
+            const profit = parseInt(document.getElementById('editProfit').value);
+            const selfDraw = parseInt(document.getElementById('editSelfDraw').value) || 0;
+            const dealIn = parseInt(document.getElementById('editDealIn').value) || 0;
+            if (!playerId) { showToast('⚠️ 請揀選雀聖'); return; }
+            if (!date) { showToast('⚠️ 請揀選決戰之日'); return; }
+            if (isNaN(profit)) { showToast('⚠️ 請輸入有效嘅盈虧數字'); return; }
+            const record = data.records.find(r => r.id === recordId);
+            if (record) {
+                const oldPlayer = data.players.find(p => p.id === record.playerId);
+                if (oldPlayer) { oldPlayer.selfDraw = Math.max(0, (oldPlayer.selfDraw || 0) - (record.selfDraw || 0)); oldPlayer.dealIn = Math.max(0, (oldPlayer.dealIn || 0) - (record.dealIn || 0)); }
+                record.playerId = playerId;
+                record.date = date;
+                record.profit = profit;
+                record.selfDraw = selfDraw;
+                record.dealIn = dealIn;
+                record.updatedAt = Date.now();
+                const newPlayer = data.players.find(p => p.id === playerId);
+                if (newPlayer) { newPlayer.selfDraw = (newPlayer.selfDraw || 0) + selfDraw; newPlayer.dealIn = (newPlayer.dealIn || 0) + dealIn; }
+                saveData(data, '✅ 已更新戰績！');
+                renderAll();
+                closeEditModal();
+                if (profit > 0) triggerMoneyRain(2);
+                if (isFirebaseConnected) syncToFirebase('📤 戰績已同步到雲端');
+            }
+        });
+
+        function deleteRecord(recordId) {
+            if (!confirm('⚠️ 確定要刪除呢條記錄？')) return;
+            const record = data.records.find(r => r.id === recordId);
+            if (record) {
+                const player = data.players.find(p => p.id === record.playerId);
+                if (player) { player.selfDraw = Math.max(0, (player.selfDraw || 0) - (record.selfDraw || 0)); player.dealIn = Math.max(0, (player.dealIn || 0) - (record.dealIn || 0)); }
+            }
+            data.records = data.records.filter(r => r.id !== recordId);
+            saveData(data, '🗑️ 記錄已刪除');
+            renderAll();
+            if (isFirebaseConnected) syncToFirebase('📤 刪除操作已同步到雲端');
+        }
+
+        // ================================================================
+        // MANUAL EXPORT/IMPORT
+        // ================================================================
+
+        function exportData() {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `麻將數據_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ 備份已下載！');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.players && imported.records) {
+                        if (confirm('⚠️ 這會覆蓋所有數據，確定繼續？')) {
+                            data = imported;
+                            if (!data.photos) data.photos = [];
+                            data.lastUpdated = Date.now();
+                            localStorage.setItem('mahjongData', JSON.stringify(data));
+                            renderAll();
+                            showToast('✅ 數據還原成功！');
+                            if (isFirebaseConnected) syncToFirebase('✅ 數據已同步到雲端！');
+                        }
+                    } else { showToast('❌ 檔案格式錯誤'); }
+                } catch (error) { showToast('❌ 匯入失敗：' + error.message); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ================================================================
+        // MONEY RAIN
+        // ================================================================
+
+        function toggleMoneyRain() { moneyRainActive ? stopMoneyRain() : startMoneyRain(); }
+
+        function startMoneyRain() {
+            moneyRainActive = true;
+            const btn = document.querySelector('.rain-toggle');
+            if (btn) { btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-stop"></i> 停止金錢雨'; }
+            triggerMoneyRain(50);
+        }
+
+        function stopMoneyRain() {
+            moneyRainActive = false;
+            const btn = document.querySelector('.rain-toggle');
+            if (btn) { btn.classList.remove('active'); btn.innerHTML = '<i class="fas fa-coins"></i> 金錢雨'; }
+            if (rainInterval) { clearInterval(rainInterval); rainInterval = null; }
+        }
+
+        function triggerMoneyRain(count = 10) {
+            const container = document.getElementById('moneyRainContainer');
+            const coins = ['💰', '🪙', '💎', '✨'];
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'coin';
+                    coin.textContent = coins[Math.floor(Math.random() * coins.length)];
+                    coin.style.left = Math.random() * 100 + '%';
+                    coin.style.fontSize = (18 + Math.random() * 24) + 'px';
+                    coin.style.animationDuration = (2 + Math.random() * 3) + 's';
+                    coin.style.animationDelay = (Math.random() * 0.5) + 's';
+                    container.appendChild(coin);
+                    setTimeout(() => { if (coin.parentNode) coin.remove(); }, 5000);
+                }, i * 100);
+            }
+            if (moneyRainActive) {
+                if (rainInterval) clearInterval(rainInterval);
+                rainInterval = setInterval(() => {
+                    if (moneyRainActive) {
+                        for (let i = 0; i < 3; i++) {
+                            const coin = document.createElement('div');
+                            coin.className = 'coin';
+                            coin.textContent = coins[Math.floor(Math.random() * coins.length)];
+                            coin.style.left = Math.random() * 100 + '%';
+                            coin.style.fontSize = (18 + Math.random() * 24) + 'px';
+                            coin.style.animationDuration = (2 + Math.random() * 3) + 's';
+                            container.appendChild(coin);
+                            setTimeout(() => { if (coin.parentNode) coin.remove(); }, 5000);
+                        }
+                    } else { clearInterval(rainInterval); rainInterval = null; }
+                }, 800);
+            }
+        }
+
+        document.getElementById('chartSection').addEventListener('click', function(e) {
+            if (e.target.closest('.rain-toggle') || e.target.closest('select') || e.target.closest('.btn-time')) return;
+            triggerMoneyRain(5);
+        });
+
+        // ================================================================
+        // CLEAR ALL DATA
+        // ================================================================
+
+        function clearAllData() {
+            if (confirm('⚠️ 確定要重置天下？紫禁之巔將回歸混沌！')) {
+                data = getDefaultData();
+                data.nextPlayerId = 5;
+                data.nextRecordId = 6;
+                data.lastUpdated = Date.now();
+                localStorage.setItem('mahjongData', JSON.stringify(data));
+                renderAll();
+                showToast('🏯 天下已重置，群雄再起！');
+                if (isFirebaseConnected) syncToFirebase('📤 重置操作已同步到雲端');
+            }
+        }
+
+        // ================================================================
+        // TOAST NOTIFICATION
+        // ================================================================
+
+        function showToast(message) {
+            if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+            const old = document.querySelector('.toast');
+            if (old) old.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (message.includes('衝突') || message.includes('其他裝置')) toast.classList.add('toast-conflict');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            toastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = '0.3s';
+                setTimeout(() => { if (toast.parentNode) toast.remove(); toastTimer = null; }, 300);
+            }, 4000);
+        }
+
+        // ================================================================
+        // INIT
+        // ================================================================
+
+        window.onload = function() {
+            console.log('🚀 網頁載入中...');
+            console.log('📋 功能: 主頁 | 排行榜(一局暴富/傾家蕩產/自摸最多/出銃最多) | 相片分享');
+            data = loadData();
+            renderAll();
+            initFirebase();
+            console.log('📋 Firebase Config:', firebaseConfig);
+            setTimeout(() => triggerMoneyRain(8), 500);
+        };
+
+        document.getElementById('chartPlayerSelect').addEventListener('change', function() { renderChart(); });
+        document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeEditModal(); });
+    </script>
+</body>
+</html>
